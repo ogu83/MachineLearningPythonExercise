@@ -57,8 +57,7 @@ for i in range(len(X)):
 n_clusters_ = len(np.unique(labels))
 
 survival_rates = {}
-for i in range(n_clusters_):
-    pass
+for i in range(n_clusters_):    
     temp_df = original_df[(original_df['cluster_group'] == float(i))]
     survival_cluster = temp_df[(temp_df['survived']==1)]
     survival_rate = float(len(survival_cluster))/float(len(temp_df))
