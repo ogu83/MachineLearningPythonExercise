@@ -1,0 +1,4 @@
+*.pickle
+__pycache__/create_sentiment_featuresets.cpython-36.pyc
+neg1.txt
+pos1.txt
