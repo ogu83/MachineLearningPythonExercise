@@ -92,21 +92,22 @@ def train_neural_network(x):
                         batches_run +=1
                         print('Batch run:',batches_run,'/',total_batches,'| Epoch:',epoch,'| Batch Loss:',c,)
 
-            saver.save(sess, "model.ckpt")
+            saver.save(sess, "./model.ckpt")
             print('Epoch', epoch, 'completed out of',hm_epochs,'loss:',epoch_loss)
             with open(tf_log,'a') as f:
                 f.write(str(epoch)+'\n') 
             epoch +=1
 
-train_neural_network(x)
+# train_neural_network(x)
 
 def test_neural_network():
     prediction = neural_network_model(x)
     with tf.Session() as sess:
-        sess.run(tf.initialize_all_variables())
+        # sess.run(tf.initialize_all_variables())
+        sess.run(tf.global_variables_initializer())
         for epoch in range(hm_epochs):
             try:
-                saver.restore(sess,"model.ckpt")
+                saver.restore(sess,"./model.ckpt")
             except Exception as e:
                 print(str(e))
             epoch_loss = 0
@@ -131,5 +132,39 @@ def test_neural_network():
         test_y = np.array(labels)
         print('Accuracy:',accuracy.eval({x:test_x, y:test_y}))
 
+# test_neural_network()
 
-test_neural_network()
+def use_neural_network(input_data):
+    prediction = neural_network_model(x)
+    with open('lexicon-2500-2638.pickle','rb') as f:
+        lexicon = pickle.load(f)
+        
+    with tf.Session() as sess:
+        # sess.run(tf.initialize_all_variables())
+        sess.run(tf.global_variables_initializer())
+        saver.restore(sess,"model.ckpt")
+        current_words = word_tokenize(input_data.lower())
+        current_words = [lemmatizer.lemmatize(i) for i in current_words]
+        features = np.zeros(len(lexicon))
+
+        for word in current_words:
+            if word.lower() in lexicon:
+                index_value = lexicon.index(word.lower())
+                # OR DO +=1, test both
+                features[index_value] += 1
+
+        features = np.array(list(features))
+        # pos: [1,0] , argmax: 0
+        # neg: [0,1] , argmax: 1
+        result = (sess.run(tf.argmax(prediction.eval(feed_dict={x:[features]}),1)))
+        if result[0] == 0:
+            print('Positive:',input_data)
+        elif result[0] == 1:
+            print('Negative:',input_data)
+
+use_neural_network("He's an idiot and a jerk.")
+use_neural_network("This was the best store i've ever seen.")
+use_neural_network("I am good")
+use_neural_network("I am bad")
+use_neural_network("Nicely done")
+use_neural_network("You are fired")
