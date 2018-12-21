@@ -21,10 +21,13 @@ def reccurent_neural_network(x):
     layer = {'weights':tf.Variable(tf.random_normal([rnn_size, n_classes])),
                       'biases':tf.Variable(tf.random_normal([n_classes]))}
 
+    print(x)
     x = tf.transpose(x, [1,0,2])
+    print(x)
     x = tf.reshape(x, [-1, chunk_size])
     # x = tf.split(0, n_chunks, x)
     x = tf.split(x, n_chunks, 0)
+    print(x)
 
     # lstm_cell = rnn_cell.BasicLSTMCell(rnn_size)
     # outputs, states = rnn.rnn(lstm_cell, x, dtype=tf.float32)
@@ -33,6 +36,8 @@ def reccurent_neural_network(x):
     outputs, states = rnn.static_rnn(lstm_cell, x, dtype=tf.float32)
 
     output = tf.matmul(outputs[-1],layer['weights']) + layer['biases']
+
+    print(x)
 
     return output
 
