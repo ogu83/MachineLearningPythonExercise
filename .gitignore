@@ -2,3 +2,9 @@
 __pycache__/create_sentiment_featuresets.cpython-36.pyc
 neg1.txt
 pos1.txt
+checkpoint
+*.model.data-00000-of-00001
+*.model.index
+*.model.meta
+*.gz
+*.npy
