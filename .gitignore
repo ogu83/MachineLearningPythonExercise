@@ -8,3 +8,4 @@ checkpoint
 *.model.meta
 *.gz
 *.npy
+log/*
