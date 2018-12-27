@@ -9,3 +9,6 @@ checkpoint
 *.gz
 *.npy
 log/*
+__pycache__/*
+mnist/*
+venv/*
