@@ -4,14 +4,28 @@ from hlt import constants  # halite constants
 from hlt.positionals import Direction  # helper for moving
 from hlt.positionals import Position 
 
+
+
 import random  # randomly picking a choice for now.
 import logging  # logging stuff to console
 
 import numpy as np
+import time
+import secrets
 
 game = hlt.Game()  # game object
 # Initializes the game
 game.ready("Sentdebot-ML")
+
+map_settings = {32: 400,
+                40: 425,
+                48: 450,
+                56: 475,
+                64: 500}
+
+TOTAL_TURNS = 50
+SAVE_THRESHOLD = 4100
+MAX_SHIPS = 1
 
 while True:
     # This loop handles each turn of the game. The game object changes every turn, and you refresh that state by
@@ -37,8 +51,8 @@ while True:
 
     for ship in me.get_ships():
 
-        logging.info(f"{ship.position}, {ship.position + Position(-3, 3)}")
-        logging.info(f"{game_map[ship.position + Position(-3,3)]}")
+        # logging.info(f"{ship.position}, {ship.position + Position(-3, 3)}")
+        # logging.info(f"{game_map[ship.position + Position(-3,3)]}")
 
         size = 16 
         surroundings = []
@@ -80,20 +94,23 @@ while True:
                 row.append(amounts)                
             surroundings.append(row)
 
-        if game.turn_number == 5:
-            with open("MyBot_Test.txt","w") as f:
-                f.write(str(surroundings))
+        # if game.turn_number == 5:
+        #     with open("MyBot_Test.txt","w") as f:
+        #         f.write(str(surroundings))
 
-        np.save(f"gameplay/{game.turn_number}.npy", surroundings)                
-
+        #np.save(f"gameplay/{game.turn_number}.npy", surroundings)        
         #command_queue.append(ship.move(Direction.North))
-        command_queue.append(
-                ship.move(
-                    random.choice([ Direction.North, Direction.South, Direction.East, Direction.West ])))
+        #command_queue.append(ship.move(random.choice([ Direction.North, Direction.South, Direction.East, Direction.West ])))
+        command_queue.append(ship.move(secrets.choice(direction_order)))
 
     # ship costs 1000, dont make a ship on a ship or they both sink
-    if me.halite_amount >= 1000 and not game_map[me.shipyard].is_occupied:
-        command_queue.append(me.shipyard.spawn())
+    if len(me.get_ships()) < MAX_SHIPS:
+        if me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied:
+            command_queue.append(me.shipyard.spawn())
+
+    if game.turn_number == TOTAL_TURNS:
+        if me.halite_amount >= SAVE_THRESHOLD:
+            np.save(f"training_data/{me.halite_amount}-{int(time.time()*1000)}.npy", surroundings)
 
     # Send your moves back to the game environment, ending this turn.
     game.end_turn(command_queue)
