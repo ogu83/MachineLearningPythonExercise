@@ -4,8 +4,6 @@ from hlt import constants  # halite constants
 from hlt.positionals import Direction  # helper for moving
 from hlt.positionals import Position 
 
-
-
 import random  # randomly picking a choice for now.
 import logging  # logging stuff to console
 
