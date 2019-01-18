@@ -13,4 +13,8 @@ def surroundings():
     for r in surroundings:
         print(r)
 
-surroundings()
+#surroundings()
+import numpy as np
+
+n = np.load("training_data/4644-1547814600246.npy")
+print(n[0])

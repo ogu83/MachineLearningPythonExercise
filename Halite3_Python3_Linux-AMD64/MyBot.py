@@ -26,6 +26,12 @@ map_settings = {32: 400,
 TOTAL_TURNS = 50
 SAVE_THRESHOLD = 4100
 MAX_SHIPS = 1
+SIGHT_DISTANCE = 16
+
+#specify direction order
+direction_order = [Direction.North, Direction.South, Direction.East, Direction.West, Direction.Still]
+    
+training_data = []
 
 while True:
     # This loop handles each turn of the game. The game object changes every turn, and you refresh that state by
@@ -43,9 +49,6 @@ while True:
     #   end of the turn.
     command_queue = []
 
-    #specify direction order
-    direction_order = [Direction.North, Direction.South, Direction.East, Direction.West, Direction.Still]
-
     dropoff_positions = [d.position for d in list(me.get_dropoffs()) + [me.shipyard]]
     ship_positions = [s.position for s in list(me.get_ships())]
 
@@ -54,7 +57,7 @@ while True:
         # logging.info(f"{ship.position}, {ship.position + Position(-3, 3)}")
         # logging.info(f"{game_map[ship.position + Position(-3,3)]}")
 
-        size = 16 
+        size = SIGHT_DISTANCE 
         surroundings = []
         #surroundings = [[HALITE_AMOUNT, SHIP, DROPOFF]]
 
@@ -101,7 +104,11 @@ while True:
         #np.save(f"gameplay/{game.turn_number}.npy", surroundings)        
         #command_queue.append(ship.move(Direction.North))
         #command_queue.append(ship.move(random.choice([ Direction.North, Direction.South, Direction.East, Direction.West ])))
-        command_queue.append(ship.move(secrets.choice(direction_order)))
+
+        choice = secrets.choice(range(len(direction_order)))
+        training_data.append([surroundings, choice])
+        command_queue.append(ship.move(direction_order[choice]))
+
 
     # ship costs 1000, dont make a ship on a ship or they both sink
     if len(me.get_ships()) < MAX_SHIPS:
@@ -110,7 +117,7 @@ while True:
 
     if game.turn_number == TOTAL_TURNS:
         if me.halite_amount >= SAVE_THRESHOLD:
-            np.save(f"training_data/{me.halite_amount}-{int(time.time()*1000)}.npy", surroundings)
+            np.save(f"training_data/{me.halite_amount}-{int(time.time()*1000)}.npy", training_data)
 
     # Send your moves back to the game environment, ending this turn.
     game.end_turn(command_queue)
