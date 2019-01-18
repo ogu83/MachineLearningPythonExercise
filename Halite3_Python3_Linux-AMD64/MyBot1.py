@@ -84,12 +84,9 @@ while True:
             with open("MyBot_Test.txt","w") as f:
                 f.write(str(surroundings))
 
-        np.save(f"gameplay/{game.turn_number}.npy", surroundings)                
+        #np.save(f"gameplay/{game.turn_number}.npy", surroundings)                
 
-        #command_queue.append(ship.move(Direction.North))
-        command_queue.append(
-                ship.move(
-                    random.choice([ Direction.North, Direction.South, Direction.East, Direction.West ])))
+        command_queue.append(ship.move(Direction.North))
 
     # ship costs 1000, dont make a ship on a ship or they both sink
     if me.halite_amount >= 1000 and not game_map[me.shipyard].is_occupied:
