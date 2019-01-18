@@ -7,6 +7,8 @@ from hlt.positionals import Position
 import random  # randomly picking a choice for now.
 import logging  # logging stuff to console
 
+import numpy as np
+
 game = hlt.Game()  # game object
 # Initializes the game
 game.ready("Sentdebot-ML")
@@ -30,18 +32,59 @@ while True:
     #specify direction order
     direction_order = [Direction.North, Direction.South, Direction.East, Direction.West, Direction.Still]
 
-    for ship in me.get_ships():        
+    dropoff_positions = [d.position for d in list(me.get_dropoffs()) + [me.shipyard]]
+    ship_positions = [s.position for s in list(me.get_ships())]
+
+    for ship in me.get_ships():
+
         logging.info(f"{ship.position}, {ship.position + Position(-3, 3)}")
         logging.info(f"{game_map[ship.position + Position(-3,3)]}")
 
-        size = 3 
+        size = 16 
         surroundings = []
+        #surroundings = [[HALITE_AMOUNT, SHIP, DROPOFF]]
+
         for y in range(-1 * size, size+1):
             row=[]
             for x in range(-1 * size, size+1):
-                row.append([x,y])
+                current_cell = game_map[ship.position + Position(x, y)]
 
+                if current_cell.position in dropoff_positions:
+                    drop_friend_foe = 1
+                else:
+                    drop_friend_foe = -1
+
+                if current_cell.position in ship_positions:
+                    ship_friend_foe = 1
+                else:
+                    ship_friend_foe = -1
+
+                halite = round(current_cell.halite_amount / constants.MAX_HALITE,2)
+                a_ship = current_cell.ship
+                structure = current_cell.structure
+
+                if halite is None:
+                    halite = 0
+
+                if a_ship is None:
+                    a_ship = 0
+                else:
+                    a_ship = round(ship_friend_foe * (a_ship.halite_amount / constants.MAX_HALITE), 2)
+
+                if structure is None:
+                    structure = 0
+                else:
+                    structure = drop_friend_foe
+
+                amounts = (halite, a_ship, structure)
+                row.append(amounts)                
             surroundings.append(row)
+
+        if game.turn_number == 5:
+            with open("MyBot_Test.txt","w") as f:
+                f.write(str(surroundings))
+
+        np.save(f"gameplay/{game.turn_number}.npy", surroundings)                
 
         command_queue.append(ship.move(Direction.North))
 
