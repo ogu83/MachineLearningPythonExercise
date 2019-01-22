@@ -115,7 +115,7 @@ while True:
 
     if game.turn_number == TOTAL_TURNS:
         if me.halite_amount >= SAVE_THRESHOLD:
-            np.save(f"training_data/{me.halite_amount}-{int(time.time()*1000)}.npy", training_data)
+            np.save(f"/media/oguz/ParrotExt/HaliteTrainingData/{me.halite_amount}-{int(time.time()*1000)}.npy", training_data)
 
     # Send your moves back to the game environment, ending this turn.
     game.end_turn(command_queue)
