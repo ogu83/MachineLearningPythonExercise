@@ -34,3 +34,55 @@ print(f"After the threshold we have  {len(training_file_names)} games.")
 
 random.shuffle(training_file_names)
 
+if LOAD_TRAIN_FILES:
+    test_x = np.load("test_x.npy")
+    test_y = np.load("test_y.npy")
+else:
+    test_x = []
+    test_y = []
+
+    for f in tqdm(training_file_names[:VALIDATION_GAME_COUNT]):
+        data = np.load(f)
+
+        for d in data:
+            test_x.append(np.array(d[0]))
+            test_y.append(d[1])
+
+    np.save("text_x.npy")
+    np.save("text_y.npy")
+
+test_x = np.array(test_x)
+
+#source: https://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
+if LOAD_PREV_MODEL:
+    model = tf.keras.models.load_model(PREV_MODEL_NAME)
+else:
+    model = Sequential()
+
+    model.add(Conv2D(64, (3, 3), padding='same', input_shape=test_x.shape[1:]))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(Conv2D(64, (3, 3), padding='same'))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(Conv2D(64, (3, 3), padding='same'))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2), padding='same'))
+
+    model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
+
+    model.add(Dense(64))
+
+    model.add(Dense(5))
+    model.add(Activation('sigmoid'))
+
+opt = tf.keras.optimizers.Adam(Lr=1e-3, decay=1e-3)
+model.compile(Loss="sparse_categorical_crossentropy", optimizer=opt, metrics=['accuracy'])
+
