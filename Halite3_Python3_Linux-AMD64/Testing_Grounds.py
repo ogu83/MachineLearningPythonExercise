@@ -19,24 +19,7 @@ def surroundings():
 # n = np.load("training_data/4644-1547814600246.npy")
 # print(n[0])
 
-#look for distribution of the training data
-# import os
-# import matplotlib.pyplot as plt
-# from statistics import mean
 
-# all_files = os.listdir('training_data')
-
-# halite_amounts=[]
-
-# for f in all_files:
-#     halite_amount = int(f.split("-")[0])
-#     halite_amounts.append(halite_amount)
-
-# plt.hist(halite_amounts)
-# plt.show()
-
-# print("Count: ", len(halite_amounts))
-# print("Mean: ", mean(halite_amounts))
 
 
 import secrets
