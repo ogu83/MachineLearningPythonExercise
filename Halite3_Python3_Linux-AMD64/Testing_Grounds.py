@@ -20,20 +20,28 @@ def surroundings():
 # print(n[0])
 
 #look for distribution of the training data
-import os
-import matplotlib.pyplot as plt
-from statistics import mean
+# import os
+# import matplotlib.pyplot as plt
+# from statistics import mean
 
-all_files = os.listdir('training_data')
+# all_files = os.listdir('training_data')
 
-halite_amounts=[]
+# halite_amounts=[]
 
-for f in all_files:
-    halite_amount = int(f.split("-")[0])
-    halite_amounts.append(halite_amount)
+# for f in all_files:
+#     halite_amount = int(f.split("-")[0])
+#     halite_amounts.append(halite_amount)
 
-plt.hist(halite_amounts)
-plt.show()
+# plt.hist(halite_amounts)
+# plt.show()
 
-print("Count: ", len(halite_amounts))
-print("Mean: ", mean(halite_amounts))
+# print("Count: ", len(halite_amounts))
+# print("Mean: ", mean(halite_amounts))
+
+
+import secrets
+
+RANDOM_CHANCE=0.3
+for i in range(100):
+    if secrets.choice(range(int(1/RANDOM_CHANCE))) == 1:
+        print("YES")
