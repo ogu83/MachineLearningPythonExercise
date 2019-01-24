@@ -9,7 +9,7 @@ map_settings = {32: 400,
                 56: 475,
                 64: 500}
 
-for i in range(1000):
+for i in range(2):
     map_size = secrets.choice(list(map_settings.keys()))    
     commands = [f'./halite --replay-directory replays/ --no-timeout --turn-limit {MAX_TURNS} --width {map_size} -- height {map_size} "python3 MyBot-ML.py" "python3 MyBot-ML.py"',
                 f'./halite --replay-directory replays/ --no-timeout --turn-limit {MAX_TURNS} --width {map_size} -- height {map_size} "python3 MyBot-ML.py" "python3 MyBot-ML.py" "python3 MyBot-ML.py" "python3 MyBot-ML.py"']

@@ -37,14 +37,17 @@ map_settings = {32: 400,
                 64: 500}
 
 TOTAL_TURNS = 50
-SAVE_THRESHOLD = 4100
-MAX_SHIPS = 1
+# SAVE_THRESHOLD = 4100
+SAVE_THRESHOLD = 0.00000001
+MAX_SHIPS = 99
 SIGHT_DISTANCE = 16
 
 #specify direction order
 direction_order = [Direction.North, Direction.South, Direction.East, Direction.West, Direction.Still]
     
 training_data = []
+
+initial_halite_amount = None
 
 while True:
     # This loop handles each turn of the game. The game object changes every turn, and you refresh that state by
@@ -57,6 +60,11 @@ while True:
     
     open that file to seee all the things we do with game map.'''
     game_map = game.game_map  # game map data. Recall game is
+
+    halite_map = np.array(list(map(lambda row: list(map(lambda cell: cell.halite_amount, row)), game_map._cells)))    
+    # logging.info(halite_map)
+    if initial_halite_amount is None:
+        initial_halite_amount = np.sum(halite_map)
 
     # A command queue holds all the commands you will run this turn. You build this list up and submit it at the
     #   end of the turn.
@@ -135,8 +143,11 @@ while True:
             command_queue.append(me.shipyard.spawn())
 
     if game.turn_number == TOTAL_TURNS:
-        if me.halite_amount >= SAVE_THRESHOLD:
-            np.save(f"/media/oguz/ParrotExt/HaliteTrainingData/{me.halite_amount}-{int(time.time()*1000)}.npy", training_data)
+        ship_count = len(me.get_ships())
+        ptc_gathered = (me.halite_amount + (ship_count * constants.SHIP_COST)) / initial_halite_amount
+
+        if ptc_gathered >= SAVE_THRESHOLD:
+            np.save(f"/media/oguz/ParrotExt/HaliteTrainingData/{ptc_gathered}-{ship_count}-{int(time.time()*1000)}.npy", training_data)
 
     # Send your moves back to the game environment, ending this turn.
     game.end_turn(command_queue)
