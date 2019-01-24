@@ -38,4 +38,3 @@ model.load('tflearncnn.model')
 
 print(X,Y)
 print(model.predict([test_x[1]]))
-
