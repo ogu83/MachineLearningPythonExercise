@@ -6,7 +6,8 @@ from keras.layers import Dense, Dropout, LSTM, Activation
 from sklearn.linear_model import LinearRegression
 from sklearn import preprocessing, model_selection, neighbors, svm
 from sklearn.metrics import mean_absolute_error
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, BaggingRegressor
+from sklearn.tree import DecisionTreeRegressor, ExtraTreeRegressor
 
 import numpy as np
 import pandas as pd
@@ -43,20 +44,33 @@ labels = y_tr
 
 #TRAIN A MODEL
 X_train, X_test, y_train, y_test = model_selection.train_test_split(data,labels,test_size=0.2)
+rf = svm.SVR(kernel='poly', gamma='scale', C=1.0, tol=1e-6)
 #rf = svm.LinearSVR()
-rf = RandomForestRegressor(n_estimators=100, #100 trees (Default of 10 is too small)
-                          max_features=0.5, #Max number of features each tree can use 
-                          min_samples_leaf=30, #Min amount of samples in each leaf
-                          random_state=11)
+
+#rf = RandomForestRegressor(n_estimators=100, #100 trees (Default of 10 is too small)
+#                          max_features=0.5, #Max number of features each tree can use 
+#                          min_samples_leaf=30, #Min amount of samples in each leaf
+#                          random_state=11)
+
+#rf = DecisionTreeRegressor(criterion='mse', max_features=0.5, min_samples_leaf=30, random_state=11)
+#rf = DecisionTreeRegressor()
+
+#rf = ExtraTreeRegressor(criterion='mse', max_features=0.5, min_samples_leaf=30, random_state=11)
+
+rf = BaggingRegressor(n_estimators=100, #100 trees (Default of 10 is too small)
+                      max_features=0.5, #Max number of features each tree can use                           
+                      random_state=11)
+#rf = BaggingRegressor()
+
 rf.fit(X_train, y_train)
 
 #LOOK FOR ACCURACY AND ERROR
 accuracy = rf.score(X_test, y_test)
 
-predictions = rf.predict(data[15:])
-print("First 5 Data and Labels")
-print(labels[15:])
-print("Predictions 5 Labels for first 10 data")
+predictions = rf.predict(data[10:])
+print("First 10 Labels")
+print(labels[10:])
+print("Predictions Labels for first 10 data")
 print(predictions)
 print("Mean Absolute Error")
 print(mean_absolute_error(labels, rf.predict(data)))
