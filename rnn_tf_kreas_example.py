@@ -8,8 +8,8 @@ mnist = tf.keras.datasets.mnist  # mnist is a dataset of 28x28 images of handwri
 x_train = x_train/255.0
 x_test = x_test/255.0
 
-print(x_train.shape)
-print(x_train[0].shape)
+#print(x_train)
+#print(x_train[0])
 
 model = Sequential()
 model.add(LSTM(128, input_shape=(x_train.shape[1:]), activation='relu', return_sequences=True))

@@ -25,9 +25,10 @@ X_train, X_test, y_train, y_test = model_selection.train_test_split(X,y,test_siz
 
 #clf = neighbors.KNeighborsClassifier(n_jobs=-1)
 #clf = svm.SVC(kernel='poly')
-clf = LinearRegression(n_jobs=-1)
+#clf = LinearRegression(n_jobs=-1)
 #clf = svm.SVR(kernel='poly')
-#clf = svm.LinearSVR()
+clf = svm.LinearSVR()
+#clf = svm.SVR(kernel='rbf')
 clf.fit(X_train, y_train)
 
 accuracy = clf.score(X_test, y_test)

@@ -25,13 +25,13 @@ convnet = regression(convnet, optimizer='adam', learning_rate=0.01, loss='catego
 
 model = tflearn.DNN(convnet)
 
-'''
+
 model.fit({'input':X}, {'targets':Y}, n_epoch=10, 
     validation_set=({'input':test_x}, {'targets':test_y}),
     snapshot_step=500, show_metric=True, run_id='mnist')
 
 model.save('tflearncnn.model')
-'''
+
 
 # LOAD MODEL IF EXIST
 model.load('tflearncnn.model')
