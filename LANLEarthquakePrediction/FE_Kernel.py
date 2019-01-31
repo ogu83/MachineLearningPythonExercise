@@ -69,8 +69,8 @@ TRAIN_DATA_PATH = f"{DATA_PATH}\\train.csv"
 TEST_DATA_PATH = f"{DATA_PATH}\\test"
 SUBMISSON_PATH = f"{DATA_PATH}\\sample_submission.csv"
 TRAINING_DERIVED_ROW_COUNT = 150_000
-READ_WHOLE_TRAIN_DATA = True
-READ_WHOLE_TEST_DATA = True
+READ_WHOLE_TRAIN_DATA = False
+READ_WHOLE_TEST_DATA = False
 NP_DATA_PATH = f"{DATA_PATH}\\np"
 
 #READ TRAIN DATA
@@ -210,7 +210,9 @@ for segment in tqdm(range(segments)):
     
     for windows in [10, 100, 1000]:
         x_roll_std = x.rolling(windows).std().dropna().values
-        x_roll_mean = x.rolling(windows).mean().dropna().values
+        x_roll_mean = x.rolling(windows).mean().dropna().values        
+        #x_roll_kurt = x.rolling(windows).kurt().dropna().values
+        #x_roll_skew = x.rolling(windows).skew().dropna().values
         
         X_tr.loc[segment, 'ave_roll_std_' + str(windows)] = x_roll_std.mean()
         X_tr.loc[segment, 'std_roll_std_' + str(windows)] = x_roll_std.std()
@@ -218,6 +220,8 @@ for segment in tqdm(range(segments)):
         X_tr.loc[segment, 'min_roll_std_' + str(windows)] = x_roll_std.min()
         X_tr.loc[segment, 'q01_roll_std_' + str(windows)] = np.quantile(x_roll_std, 0.01)
         X_tr.loc[segment, 'q05_roll_std_' + str(windows)] = np.quantile(x_roll_std, 0.05)
+        #X_tr.loc[segment, 'q25_roll_std_' + str(windows)] = np.quantile(x_roll_std, 0.25)
+        #X_tr.loc[segment, 'q75_roll_std_' + str(windows)] = np.quantile(x_roll_std, 0.75)
         X_tr.loc[segment, 'q95_roll_std_' + str(windows)] = np.quantile(x_roll_std, 0.95)
         X_tr.loc[segment, 'q99_roll_std_' + str(windows)] = np.quantile(x_roll_std, 0.99)
         X_tr.loc[segment, 'av_change_abs_roll_std_' + str(windows)] = np.mean(np.diff(x_roll_std))
@@ -230,11 +234,41 @@ for segment in tqdm(range(segments)):
         X_tr.loc[segment, 'min_roll_mean_' + str(windows)] = x_roll_mean.min()
         X_tr.loc[segment, 'q01_roll_mean_' + str(windows)] = np.quantile(x_roll_mean, 0.01)
         X_tr.loc[segment, 'q05_roll_mean_' + str(windows)] = np.quantile(x_roll_mean, 0.05)
+        #X_tr.loc[segment, 'q25_roll_mean_' + str(windows)] = np.quantile(x_roll_std, 0.25)
+        #X_tr.loc[segment, 'q75_roll_mean_' + str(windows)] = np.quantile(x_roll_std, 0.75)
         X_tr.loc[segment, 'q95_roll_mean_' + str(windows)] = np.quantile(x_roll_mean, 0.95)
         X_tr.loc[segment, 'q99_roll_mean_' + str(windows)] = np.quantile(x_roll_mean, 0.99)
         X_tr.loc[segment, 'av_change_abs_roll_mean_' + str(windows)] = np.mean(np.diff(x_roll_mean))
         X_tr.loc[segment, 'av_change_rate_roll_mean_' + str(windows)] = np.mean(np.nonzero((np.diff(x_roll_mean) / x_roll_mean[:-1]))[0])
         X_tr.loc[segment, 'abs_max_roll_mean_' + str(windows)] = np.abs(x_roll_mean).max()
+
+        #X_tr.loc[segment, 'ave_roll_kurt_' + str(windows)] = x_roll_kurt.mean()
+        #X_tr.loc[segment, 'std_roll_kurt_' + str(windows)] = x_roll_kurt.std()
+        #X_tr.loc[segment, 'max_roll_kurt_' + str(windows)] = x_roll_kurt.max()
+        #X_tr.loc[segment, 'min_roll_kurt_' + str(windows)] = x_roll_kurt.min()
+        #X_tr.loc[segment, 'q01_roll_kurt_' + str(windows)] = np.quantile(x_roll_kurt, 0.01)
+        #X_tr.loc[segment, 'q05_roll_kurt_' + str(windows)] = np.quantile(x_roll_kurt, 0.05)
+        ##X_tr.loc[segment, 'q25_roll_kurt_' + str(windows)] = np.quantile(x_roll_kurt, 0.25)
+        ##X_tr.loc[segment, 'q75_roll_kurt_' + str(windows)] = np.quantile(x_roll_kurt, 0.75)
+        #X_tr.loc[segment, 'q95_roll_kurt_' + str(windows)] = np.quantile(x_roll_kurt, 0.95)
+        #X_tr.loc[segment, 'q99_roll_kurt_' + str(windows)] = np.quantile(x_roll_kurt, 0.99)
+        #X_tr.loc[segment, 'av_change_abs_roll_kurt_' + str(windows)] = np.mean(np.diff(x_roll_kurt))
+        #X_tr.loc[segment, 'av_change_rate_roll_kurt_' + str(windows)] = np.mean(np.nonzero((np.diff(x_roll_kurt) / x_roll_kurt[:-1]))[0])
+        #X_tr.loc[segment, 'abs_max_roll_kurt_' + str(windows)] = np.abs(x_roll_kurt).max()
+
+        #X_tr.loc[segment, 'ave_roll_skew_' + str(windows)] = x_roll_skew.mean()
+        #X_tr.loc[segment, 'std_roll_skew_' + str(windows)] = x_roll_skew.std()
+        #X_tr.loc[segment, 'max_roll_skew_' + str(windows)] = x_roll_skew.max()
+        #X_tr.loc[segment, 'min_roll_skew_' + str(windows)] = x_roll_skew.min()
+        #X_tr.loc[segment, 'q01_roll_skew_' + str(windows)] = np.quantile(x_roll_skew, 0.01)
+        #X_tr.loc[segment, 'q05_roll_skew_' + str(windows)] = np.quantile(x_roll_skew, 0.05)
+        ##X_tr.loc[segment, 'q25_roll_skew_' + str(windows)] = np.quantile(x_roll_skew, 0.25)
+        ##X_tr.loc[segment, 'q75_roll_skew_' + str(windows)] = np.quantile(x_roll_skew, 0.75)
+        #X_tr.loc[segment, 'q95_roll_skew_' + str(windows)] = np.quantile(x_roll_skew, 0.95)
+        #X_tr.loc[segment, 'q99_roll_skew_' + str(windows)] = np.quantile(x_roll_skew, 0.99)
+        #X_tr.loc[segment, 'av_change_abs_roll_skew_' + str(windows)] = np.mean(np.diff(x_roll_skew))
+        #X_tr.loc[segment, 'av_change_rate_roll_skew_' + str(windows)] = np.mean(np.nonzero((np.diff(x_roll_skew) / x_roll_skew[:-1]))[0])
+        #X_tr.loc[segment, 'abs_max_roll_skew_' + str(windows)] = np.abs(x_roll_skew).max()
 
 print(f'{X_tr.shape[0]} samples in new train data and {X_tr.shape[1]} columns.')
 #print('X:')

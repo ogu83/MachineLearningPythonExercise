@@ -84,14 +84,14 @@ valid_gen = generator(float_data, batch_size=batch_size, max_index=second_earthq
 
 # Define model
 from keras.models import Sequential
-from keras.layers import Dense, CuDNNGRU
+from keras.layers import Dense
 from keras.optimizers import adam
 from keras.callbacks import ModelCheckpoint
 
 cb = [ModelCheckpoint("model.hdf5", save_best_only=True, period=3)]
 
 model = Sequential()
-model.add(CuDNNGRU(48, input_shape=(None, n_features)))
+model.add(Dense(48, input_shape=(None, n_features)))
 model.add(Dense(10, activation='relu'))
 model.add(Dense(1))
 
@@ -132,7 +132,7 @@ submission = pd.read_csv(SUBMISSON_PATH, index_col='seg_id', dtype={"time_to_fai
 #  Load each test data, create the feature matrix, get numeric prediction
 for i, seg_id in enumerate(tqdm(submission.index)):
   #  print(i)
-    seg = pd.read_csv(TEST_DATA_PATH + seg_id + '.csv')
+    seg = pd.read_csv(TEST_DATA_PATH + "\\" + seg_id + '.csv')
     x = seg['acoustic_data'].values
     submission.time_to_failure[i] = model.predict(np.expand_dims(create_X(x), 0))
 

@@ -23,15 +23,15 @@ NP_DATA_PATH = f"{DATA_PATH}\\np"
 #data = np.random.random((1000,100))
 #labels = np.random.random((1000,1))
 
-X_train_scaled = np.load(NP_DATA_PATH + "\\X_train_scaled.npy")
-X_test_scaled = np.load(NP_DATA_PATH + "\\X_test_scaled.npy")
-y_tr = np.load(NP_DATA_PATH + "\\y_tr.npy")
+X_train_scaled = np.nan_to_num(np.load(NP_DATA_PATH + "\\X_train_scaled.npy"))
+X_test_scaled = np.nan_to_num(np.load(NP_DATA_PATH + "\\X_test_scaled.npy"))
+y_tr = np.nan_to_num(np.load(NP_DATA_PATH + "\\y_tr.npy"))
 
 data = X_train_scaled
 labels = y_tr
 
-#print(data)
-#print(labels)
+print(data)
+print(labels)
 
 #to create a model
 #model = Sequential()
@@ -44,22 +44,22 @@ labels = y_tr
 
 #TRAIN A MODEL
 X_train, X_test, y_train, y_test = model_selection.train_test_split(data,labels,test_size=0.2)
-rf = svm.SVR(kernel='poly', gamma='scale', C=1.0, tol=1e-6)
+#rf = svm.SVR(kernel='poly', gamma='scale', C=1.0, tol=1e-6)
 #rf = svm.LinearSVR()
 
-#rf = RandomForestRegressor(n_estimators=100, #100 trees (Default of 10 is too small)
-#                          max_features=0.5, #Max number of features each tree can use 
-#                          min_samples_leaf=30, #Min amount of samples in each leaf
-#                          random_state=11)
+rf = RandomForestRegressor(n_estimators=100, #100 trees (Default of 10 is too small)
+                          max_features=0.5, #Max number of features each tree can use 
+                          min_samples_leaf=30, #Min amount of samples in each leaf
+                          random_state=11)
 
 #rf = DecisionTreeRegressor(criterion='mse', max_features=0.5, min_samples_leaf=30, random_state=11)
 #rf = DecisionTreeRegressor()
 
 #rf = ExtraTreeRegressor(criterion='mse', max_features=0.5, min_samples_leaf=30, random_state=11)
 
-rf = BaggingRegressor(n_estimators=100, #100 trees (Default of 10 is too small)
-                      max_features=0.5, #Max number of features each tree can use                           
-                      random_state=11)
+#rf = BaggingRegressor(n_estimators=100, #100 trees (Default of 10 is too small)
+#                      max_features=0.5, #Max number of features each tree can use                           
+#                      random_state=11)
 #rf = BaggingRegressor()
 
 rf.fit(X_train, y_train)
@@ -84,4 +84,4 @@ test_predictions = rf.predict(X_test_scaled)
 submission = pd.read_csv(SUBMISSON_PATH, index_col='seg_id')
 submission['time_to_failure'] = test_predictions
 print(submission.head())
-submission.to_csv(f'{DATA_PATH}\\submission.csv')
+submission.to_csv(f'{DATA_PATH}\\submission.csv') 
