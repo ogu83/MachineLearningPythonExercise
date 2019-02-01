@@ -25,7 +25,7 @@ if os.path.exists(NP_DATA_PATH + "\\X_tr_l.npy") and os.path.exists(NP_DATA_PATH
     y_tr = np.load(NP_DATA_PATH + "\\y_tr_l.npy")
 else:   
     if READ_WHOLE_TRAIN_DATA:
-        chunks = pd.read_csv(TRAIN_DATA_PATH, dtype={'acoustic_data': np.int16, 'time_to_failure': np.float32}, chunksize= 10 ** 6)        
+        chunks = pd.read_csv(TRAIN_DATA_PATH, dtype={'acoustic_data': np.int16, 'time_to_failure': np.float32}, chunksize= 10 ** 6)
         for chunk in tqdm(chunks):
             X = chunk['acoustic_data'];
             y = chunk['time_to_failure'];

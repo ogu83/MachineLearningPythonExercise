@@ -2,6 +2,7 @@ from tensorflow.contrib.rnn import *
 
 import numpy as np 
 import pandas as pd
+from pandas import DataFrame
 import os
 from tqdm import tqdm
 
@@ -21,6 +22,10 @@ TEST_DATA_PATH = f"{DATA_PATH}\\test"
 SUBMISSON_PATH = f"{DATA_PATH}\\sample_submission.csv"
 
 float_data = pd.read_csv(TRAIN_DATA_PATH, dtype={"acoustic_data": np.float32, "time_to_failure": np.float32}).values
+#float_data = DataFrame( columns = {'acoustic_data': np.int16, 'time_to_failure': np.float32} )
+#chunks = pd.read_csv(TRAIN_DATA_PATH, dtype={'acoustic_data': np.int16, 'time_to_failure': np.float32}, chunksize= 10 ** 3).values
+#for chunk in tqdm(chunks):
+#    float_data.append(chunk)
 
 # Helper function for the data generator. Extracts mean, standard deviation, and quantiles per time step.
 # Can easily be extended. Expects a two dimensional array.
@@ -75,7 +80,7 @@ batch_size = 32
 
 # Position of second (of 16) earthquake. Used to have a clean split
 # between train and validation
-second_earthquake = 50085877
+second_earthquake = 50_085_877
 float_data[second_earthquake, 1]
 
 # Initialize generators
@@ -84,14 +89,14 @@ valid_gen = generator(float_data, batch_size=batch_size, max_index=second_earthq
 
 # Define model
 from keras.models import Sequential
-from keras.layers import Dense
+from keras.layers import Dense, CuDNNGRU, GRU
 from keras.optimizers import adam
 from keras.callbacks import ModelCheckpoint
 
 cb = [ModelCheckpoint("model.hdf5", save_best_only=True, period=3)]
 
 model = Sequential()
-model.add(Dense(48, input_shape=(None, n_features)))
+model.add(GRU(48, input_shape=(None, n_features)))
 model.add(Dense(10, activation='relu'))
 model.add(Dense(1))
 
@@ -139,4 +144,4 @@ for i, seg_id in enumerate(tqdm(submission.index)):
 submission.head()
 
 # Save
-#submission.to_csv('submission.csv')
+submission.to_csv('submission.csv')
