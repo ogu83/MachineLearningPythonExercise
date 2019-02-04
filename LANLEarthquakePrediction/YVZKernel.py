@@ -79,20 +79,7 @@ for i, seg_id in enumerate(tqdm(X_test.index)):
         seg_time_avg = seg_time_sum / seg_time_count
 
     test_predictions.append(seg_time_avg)
-    print(seg_id, seg_time_avg)
-    
-#    for seg_acc in tqdm(seg_acustic_data):
-#        filtered_train_data = np.where(train_data[:,0] == seg_acc)
-#        filtered_values = (train_data[filtered_train_data])[:,1]
-#        filtered_average = np.average(filtered_values)
-#        seg_time_sum += filtered_average
-#        seg_time_count += 1
-#        seg_time_avg = seg_time_sum / seg_time_count
-
-#    seg_time_avg = seg_time_sum / seg_time_count    
-#    test_predictions.append(seg_time_avg)
-#    print(seg_id, seg_time_avg)
-    
+    print(seg_id, seg_time_avg)   
     
 #MAKE SUBMISSION FILE
 submission = pd.read_csv(SUBMISSON_PATH, index_col='seg_id')

@@ -47,10 +47,10 @@ X_train, X_test, y_train, y_test = model_selection.train_test_split(data,labels,
 #rf = svm.SVR(kernel='poly', gamma='scale', C=1.0, tol=1e-6)
 #rf = svm.LinearSVR()
 
-rf = RandomForestRegressor(n_estimators=100, #100 trees (Default of 10 is too small)
-                          max_features=0.5, #Max number of features each tree can use 
-                          min_samples_leaf=30, #Min amount of samples in each leaf
-                          random_state=11)
+#rf = RandomForestRegressor(n_estimators=100, #100 trees (Default of 10 is too small)
+#                          max_features=0.5, #Max number of features each tree can use 
+#                          min_samples_leaf=30, #Min amount of samples in each leaf
+#                          random_state=11)
 
 #rf = DecisionTreeRegressor(criterion='mse', max_features=0.5, min_samples_leaf=30, random_state=11)
 #rf = DecisionTreeRegressor()
@@ -61,11 +61,12 @@ rf = RandomForestRegressor(n_estimators=100, #100 trees (Default of 10 is too sm
 #                      max_features=0.5, #Max number of features each tree can use                           
 #                      random_state=11)
 #rf = BaggingRegressor()
-
-rf.fit(X_train, y_train)
-
+#rf.fit(X_train, y_train)
 #LOOK FOR ACCURACY AND ERROR
-accuracy = rf.score(X_test, y_test)
+#accuracy = rf.score(X_test, y_test)
+
+from xgboost import XGBRegressor
+rf = XGBRegressor(n_estimators=100, learning_rate=.05, silent=True).fit(X_train, y_train, early_stopping_rounds=5, eval_set=[(X_test, y_test)],eval_metric='mae', verbose=False)
 
 predictions = rf.predict(data[10:])
 print("First 10 Labels")
@@ -74,8 +75,8 @@ print("Predictions Labels for first 10 data")
 print(predictions)
 print("Mean Absolute Error")
 print(mean_absolute_error(labels, rf.predict(data)))
-print("Accuracy")
-print(accuracy)
+#print("Accuracy")
+#print(accuracy)
 
 #PREDCIT THE TEST DATA
 test_predictions = rf.predict(X_test_scaled)

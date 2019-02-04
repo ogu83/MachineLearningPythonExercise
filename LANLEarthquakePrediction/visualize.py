@@ -5,13 +5,13 @@ import numpy as np
 DATA_PATH = "D:\\LANLEarthquakeData"
 TRAIN_DATA_PATH = f"{DATA_PATH}\\train.csv"
 
-traindata = pd.read_csv(TRAIN_DATA_PATH, nrows = 1000, dtype={'acoustic_data': np.int16, 'time_to_failure': np.float32})
+traindata = pd.read_csv(TRAIN_DATA_PATH, nrows = 10000, dtype={'acoustic_data': np.int16, 'time_to_failure': np.float32})
 
 acustic_data = traindata.iloc[:,0]
 time_to_failure = traindata.iloc[:,1]
 
 for t in range(1, len(time_to_failure)):
-    if round(time_to_failure[t-1], ndigits=5) != round(time_to_failure[t], ndigits=5):
+    if round(time_to_failure[t-1], ndigits=6) != round(time_to_failure[t], ndigits=6):
         print(t, time_to_failure[t])
 
 fig, ax1 = plt.subplots(figsize=(16, 8))
