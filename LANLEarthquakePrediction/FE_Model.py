@@ -38,25 +38,20 @@ def add_trend_feature(arr, abs_values=False):
     lr.fit(idx.reshape(-1, 1), arr)
     return lr.coef_[0]
 
-def classic_sta_lta(x, length_sta, length_lta):
-    
+def classic_sta_lta(x, length_sta, length_lta):    
     sta = np.cumsum(x ** 2)
 
     # Convert to float
     sta = np.require(sta, dtype=np.float)
-
     # Copy for LTA
     lta = sta.copy()
-
     # Compute the STA and the LTA
     sta[length_sta:] = sta[length_sta:] - sta[:-length_sta]
     sta /= length_sta
     lta[length_lta:] = lta[length_lta:] - lta[:-length_lta]
     lta /= length_lta
-
     # Pad zeros
     sta[:length_lta - 1] = 0
-
     # Avoid division by zero by setting zero values to tiny float
     dtiny = np.finfo(0.0).tiny
     idx = lta < dtiny
@@ -64,87 +59,6 @@ def classic_sta_lta(x, length_sta, length_lta):
 
     return sta / lta
 
-def train_model(X=X_train_scaled, X_test=X_test_scaled, y=y_tr, params=None, folds=folds, model_type='lgb', plot_feature_importance=False, model=None):
-
-    oof = np.zeros(len(X))
-    prediction = np.zeros(len(X_test))
-    scores = []
-    feature_importance = pd.DataFrame()
-    for fold_n, (train_index, valid_index) in enumerate(folds.split(X)):
-        print('Fold', fold_n, 'started at', time.ctime())
-        X_train, X_valid = X.iloc[train_index], X.iloc[valid_index]
-        y_train, y_valid = y.iloc[train_index], y.iloc[valid_index]
-        
-        if model_type == 'lgb':
-            model = lgb.LGBMRegressor(**params, n_estimators = 50000, n_jobs = -1)
-            model.fit(X_train, y_train, 
-                    eval_set=[(X_train, y_train), (X_valid, y_valid)], eval_metric='mae',
-                    verbose=10000, early_stopping_rounds=200)
-            
-            y_pred_valid = model.predict(X_valid)
-            y_pred = model.predict(X_test, num_iteration=model.best_iteration_)
-            
-        if model_type == 'xgb':
-            train_data = xgb.DMatrix(data=X_train, label=y_train, feature_names=X.columns)
-            valid_data = xgb.DMatrix(data=X_valid, label=y_valid, feature_names=X.columns)
-
-            watchlist = [(train_data, 'train'), (valid_data, 'valid_data')]
-            model = xgb.train(dtrain=train_data, num_boost_round=20000, evals=watchlist, early_stopping_rounds=200, verbose_eval=500, params=params)
-            y_pred_valid = model.predict(xgb.DMatrix(X_valid, feature_names=X.columns), ntree_limit=model.best_ntree_limit)
-            y_pred = model.predict(xgb.DMatrix(X_test, feature_names=X.columns), ntree_limit=model.best_ntree_limit)
-        
-        if model_type == 'sklearn':
-            model = model
-            model.fit(X_train, y_train)
-            
-            y_pred_valid = model.predict(X_valid).reshape(-1,)
-            score = mean_absolute_error(y_valid, y_pred_valid)
-            print(f'Fold {fold_n}. MAE: {score:.4f}.')
-            print('')
-            
-            y_pred = model.predict(X_test).reshape(-1,)
-        
-        if model_type == 'cat':
-            model = CatBoostRegressor(iterations=20000,  eval_metric='MAE', **params)
-            model.fit(X_train, y_train, eval_set=(X_valid, y_valid), cat_features=[], use_best_model=True, verbose=False)
-
-            y_pred_valid = model.predict(X_valid)
-            y_pred = model.predict(X_test)
-        
-        oof[valid_index] = y_pred_valid.reshape(-1,)
-        scores.append(mean_absolute_error(y_valid, y_pred_valid))
-
-        prediction += y_pred    
-        
-        if model_type == 'lgb':
-            # feature importance
-            fold_importance = pd.DataFrame()
-            fold_importance["feature"] = X.columns
-            fold_importance["importance"] = model.feature_importances_
-            fold_importance["fold"] = fold_n + 1
-            feature_importance = pd.concat([feature_importance, fold_importance], axis=0)
-
-    prediction /= n_fold
-    
-    print('CV mean score: {0:.4f}, std: {1:.4f}.'.format(np.mean(scores), np.std(scores)))
-    
-    if model_type == 'lgb':
-        feature_importance["importance"] /= n_fold
-        if plot_feature_importance:
-            cols = feature_importance[["feature", "importance"]].groupby("feature").mean().sort_values(
-                by="importance", ascending=False)[:50].index
-
-            best_features = feature_importance.loc[feature_importance.feature.isin(cols)]
-
-            plt.figure(figsize=(16, 12));
-            sns.barplot(x="importance", y="feature", data=best_features.sort_values(by="importance", ascending=False));
-            plt.title('LGB Features (avg over folds)');
-        
-            return oof, prediction, feature_importance
-        return oof, prediction
-    
-    else:
-        return oof, prediction
 
 DATA_PATH = "D:\\LANLEarthquakeData"
 TRAIN_DATA_PATH = f"{DATA_PATH}\\train.csv"
@@ -260,6 +174,10 @@ else:
         X_tr.loc[segment, 'classic_sta_lta2_mean'] = classic_sta_lta(x, 5000, 100000).mean()
         X_tr.loc[segment, 'classic_sta_lta3_mean'] = classic_sta_lta(x, 3333, 6666).mean()
         X_tr.loc[segment, 'classic_sta_lta4_mean'] = classic_sta_lta(x, 10000, 25000).mean()
+        X_tr.loc[segment, 'classic_sta_lta5_mean'] = classic_sta_lta(x, 50, 1000).mean()
+        X_tr.loc[segment, 'classic_sta_lta6_mean'] = classic_sta_lta(x, 100, 5000).mean()
+        X_tr.loc[segment, 'classic_sta_lta7_mean'] = classic_sta_lta(x, 333, 666).mean()
+        X_tr.loc[segment, 'classic_sta_lta8_mean'] = classic_sta_lta(x, 4000, 10000).mean()
         X_tr.loc[segment, 'Moving_average_700_mean'] = x.rolling(window=700).mean().mean(skipna=True)
         X_tr.loc[segment, 'Moving_average_1500_mean'] = x.rolling(window=1500).mean().mean(skipna=True)
         X_tr.loc[segment, 'Moving_average_3000_mean'] = x.rolling(window=3000).mean().mean(skipna=True)
@@ -268,7 +186,7 @@ else:
         X_tr.loc[segment, 'exp_Moving_average_300_mean'] = (ewma(x, span=300).mean()).mean(skipna=True)
         X_tr.loc[segment, 'exp_Moving_average_3000_mean'] = ewma(x, span=3000).mean().mean(skipna=True)
         X_tr.loc[segment, 'exp_Moving_average_30000_mean'] = ewma(x, span=6000).mean().mean(skipna=True)
-        no_of_std = 2
+        no_of_std = 3
         X_tr.loc[segment, 'MA_700MA_std_mean'] = x.rolling(window=700).std().mean()
         X_tr.loc[segment,'MA_700MA_BB_high_mean'] = (X_tr.loc[segment, 'Moving_average_700_mean'] + no_of_std * X_tr.loc[segment, 'MA_700MA_std_mean']).mean()
         X_tr.loc[segment,'MA_700MA_BB_low_mean'] = (X_tr.loc[segment, 'Moving_average_700_mean'] - no_of_std * X_tr.loc[segment, 'MA_700MA_std_mean']).mean()
@@ -310,33 +228,25 @@ else:
             X_tr.loc[segment, 'av_change_rate_roll_mean_' + str(windows)] = np.mean(np.nonzero((np.diff(x_roll_mean) / x_roll_mean[:-1]))[0])
             X_tr.loc[segment, 'abs_max_roll_mean_' + str(windows)] = np.abs(x_roll_mean).max()
        
-    print(f'{X_tr.shape[0]} samples in new train data and {X_tr.shape[1]} columns.')
-    #print('X:')
-    #print(X_tr.head())
-    #print('Y:')
-    #print(y_tr.head()) 
+    print(f'{X_tr.shape[0]} samples in new train data and {X_tr.shape[1]} columns.')    
 
     np.abs(X_tr.corrwith(y_tr['time_to_failure'])).sort_values(ascending=False).head(12)
 
-    plt.figure(figsize=(44, 24))
-    cols = list(np.abs(X_tr.corrwith(y_tr['time_to_failure'])).sort_values(ascending=False).head(24).index)
-    for i, col in enumerate(cols):
-        plt.subplot(6, 4, i + 1)
-        plt.plot(X_tr[col], color='blue')
-        plt.title(col)
-        ax1.set_ylabel(col, color='b')
-
-        ax2 = ax1.twinx()
-        plt.plot(y_tr, color='g')
-        ax2.set_ylabel('time_to_failure', color='g')
-        plt.legend([col, 'time_to_failure'], loc=(0.875, 0.9))
-        plt.grid(False)
+    # fillna in new columns
+    classic_sta_lta5_mean_fill = X_tr.loc[X_tr['classic_sta_lta5_mean'] != -np.inf, 'classic_sta_lta5_mean'].mean()
+    X_tr.loc[X_tr['classic_sta_lta5_mean'] == -np.inf, 'classic_sta_lta5_mean'] = classic_sta_lta5_mean_fill
+    X_tr['classic_sta_lta5_mean'] = X_tr['classic_sta_lta5_mean'].fillna(classic_sta_lta5_mean_fill)
+    classic_sta_lta7_mean_fill = X_tr.loc[X_tr['classic_sta_lta7_mean'] != -np.inf, 'classic_sta_lta7_mean'].mean()
+    X_tr.loc[X_tr['classic_sta_lta7_mean'] == -np.inf, 'classic_sta_lta7_mean'] = classic_sta_lta7_mean_fill
+    X_tr['classic_sta_lta7_mean'] = X_tr['classic_sta_lta7_mean'].fillna(classic_sta_lta7_mean_fill)
 
     scaler = StandardScaler()
     scaler.fit(X_tr)
     X_train_scaled = pd.DataFrame(scaler.transform(X_tr), columns=X_tr.columns)
-    X_train_scaled.to_pickle(X_TRAIN_PICKLE)
-
+    X_train_scaled.to_pickle(X_TRAIN_PICKLE)    
+    print("x_train_scaled.pickle saved")
+    y_tr.to_pickle(Y_TRAIN_PICKLE)
+    print("y_train_scaled.pickle saved")
 
 if os.path.exists(X_TEST_PICKLE):
     X_test_scaled = pd.read_pickle(X_TEST_PICKLE)
@@ -423,6 +333,10 @@ else:
         X_test.loc[seg_id, 'classic_sta_lta2_mean'] = classic_sta_lta(x, 5000, 100000).mean()
         X_test.loc[seg_id, 'classic_sta_lta3_mean'] = classic_sta_lta(x, 3333, 6666).mean()
         X_test.loc[seg_id, 'classic_sta_lta4_mean'] = classic_sta_lta(x, 10000, 25000).mean()
+        X_test.loc[seg_id, 'classic_sta_lta5_mean'] = classic_sta_lta(x, 50, 1000).mean()
+        X_test.loc[seg_id, 'classic_sta_lta6_mean'] = classic_sta_lta(x, 100, 5000).mean()
+        X_test.loc[seg_id, 'classic_sta_lta7_mean'] = classic_sta_lta(x, 333, 666).mean()
+        X_test.loc[seg_id, 'classic_sta_lta8_mean'] = classic_sta_lta(x, 4000, 10000).mean()
         X_test.loc[seg_id, 'Moving_average_700_mean'] = x.rolling(window=700).mean().mean(skipna=True)
         X_test.loc[seg_id, 'Moving_average_1500_mean'] = x.rolling(window=1500).mean().mean(skipna=True)
         X_test.loc[seg_id, 'Moving_average_3000_mean'] = x.rolling(window=3000).mean().mean(skipna=True)
@@ -431,7 +345,7 @@ else:
         X_test.loc[seg_id, 'exp_Moving_average_300_mean'] = (ewma(x, span=300).mean()).mean(skipna=True)
         X_test.loc[seg_id, 'exp_Moving_average_3000_mean'] = ewma(x, span=3000).mean().mean(skipna=True)
         X_test.loc[seg_id, 'exp_Moving_average_30000_mean'] = ewma(x, span=6000).mean().mean(skipna=True)
-        no_of_std = 2
+        no_of_std = 3
         X_test.loc[seg_id, 'MA_700MA_std_mean'] = x.rolling(window=700).std().mean()
         X_test.loc[seg_id,'MA_700MA_BB_high_mean'] = (X_test.loc[seg_id, 'Moving_average_700_mean'] + no_of_std * X_test.loc[seg_id, 'MA_700MA_std_mean']).mean()
         X_test.loc[seg_id,'MA_700MA_BB_low_mean'] = (X_test.loc[seg_id, 'Moving_average_700_mean'] - no_of_std * X_test.loc[seg_id, 'MA_700MA_std_mean']).mean()
@@ -483,12 +397,94 @@ else:
     X_test.loc[X_test['classic_sta_lta7_mean'] == -np.inf, 'classic_sta_lta7_mean'] = classic_sta_lta7_mean_fill
     X_test_scaled = pd.DataFrame(scaler.transform(X_test), columns=X_test.columns)
     X_test_scaled.to_pickle(X_TEST_PICKLE)
-
+    print("x_test_scaled.pickle saved")
+    
 n_fold = 5
 folds = KFold(n_splits=n_fold, shuffle=True, random_state=11)
+def train_model(X=X_train_scaled, X_test=X_test_scaled, y=y_tr, params=None, folds=folds, model_type='lgb', plot_feature_importance=False, model=None):
+
+    oof = np.zeros(len(X))
+    prediction = np.zeros(len(X_test))
+    scores = []
+    feature_importance = pd.DataFrame()
+    for fold_n, (train_index, valid_index) in enumerate(folds.split(X)):
+        print('Fold', fold_n, 'started at', time.ctime())
+        X_train, X_valid = X.iloc[train_index], X.iloc[valid_index]
+        y_train, y_valid = y.iloc[train_index], y.iloc[valid_index]
+        
+        if model_type == 'lgb':
+            model = lgb.LGBMRegressor(**params, n_estimators = 50000, n_jobs = -1)
+            model.fit(X_train, y_train, 
+                    eval_set=[(X_train, y_train), (X_valid, y_valid)], eval_metric='mae',
+                    verbose=10000, early_stopping_rounds=200)
+            
+            y_pred_valid = model.predict(X_valid)
+            y_pred = model.predict(X_test, num_iteration=model.best_iteration_)
+            
+        if model_type == 'xgb':
+            train_data = xgb.DMatrix(data=X_train, label=y_train, feature_names=X.columns)
+            valid_data = xgb.DMatrix(data=X_valid, label=y_valid, feature_names=X.columns)
+
+            watchlist = [(train_data, 'train'), (valid_data, 'valid_data')]
+            model = xgb.train(dtrain=train_data, num_boost_round=20000, evals=watchlist, early_stopping_rounds=200, verbose_eval=500, params=params)
+            y_pred_valid = model.predict(xgb.DMatrix(X_valid, feature_names=X.columns), ntree_limit=model.best_ntree_limit)
+            y_pred = model.predict(xgb.DMatrix(X_test, feature_names=X.columns), ntree_limit=model.best_ntree_limit)
+        
+        if model_type == 'sklearn':
+            model = model
+            model.fit(X_train, y_train)
+            
+            y_pred_valid = model.predict(X_valid).reshape(-1,)
+            score = mean_absolute_error(y_valid, y_pred_valid)
+            print(f'Fold {fold_n}. MAE: {score:.4f}.')
+            print('')
+            
+            y_pred = model.predict(X_test).reshape(-1,)
+        
+        if model_type == 'cat':
+            model = CatBoostRegressor(iterations=20000,  eval_metric='MAE', **params)
+            model.fit(X_train, y_train, eval_set=(X_valid, y_valid), cat_features=[], use_best_model=True, verbose=False)
+
+            y_pred_valid = model.predict(X_valid)
+            y_pred = model.predict(X_test)
+        
+        oof[valid_index] = y_pred_valid.reshape(-1,)
+        scores.append(mean_absolute_error(y_valid, y_pred_valid))
+
+        prediction += y_pred    
+        
+        if model_type == 'lgb':
+            # feature importance
+            fold_importance = pd.DataFrame()
+            fold_importance["feature"] = X.columns
+            fold_importance["importance"] = model.feature_importances_
+            fold_importance["fold"] = fold_n + 1
+            feature_importance = pd.concat([feature_importance, fold_importance], axis=0)
+
+    prediction /= n_fold
+    
+    print('CV mean score: {0:.4f}, std: {1:.4f}.'.format(np.mean(scores), np.std(scores)))
+    
+    if model_type == 'lgb':
+        feature_importance["importance"] /= n_fold
+        if plot_feature_importance:
+            cols = feature_importance[["feature", "importance"]].groupby("feature").mean().sort_values(
+                by="importance", ascending=False)[:50].index
+
+            best_features = feature_importance.loc[feature_importance.feature.isin(cols)]
+
+            plt.figure(figsize=(16, 12));
+            sns.barplot(x="importance", y="feature", data=best_features.sort_values(by="importance", ascending=False));
+            plt.title('LGB Features (avg over folds)');
+        
+            return oof, prediction, feature_importance
+        return oof, prediction
+    
+    else:
+        return oof, prediction
 
 # Taking less columns seriously decreases score.
-#top_cols = list(feature_importance[["feature", "importance"]].groupby("feature").mean().sort_values(by="importance", ascending=False)[:50].index)
+# top_cols = list(feature_importance[["feature", "importance"]].groupby("feature").mean().sort_values(by="importance", ascending=False)[:50].index)
 # X_train_scaled = X_train_scaled[top_cols]
 # X_test_scaled = X_test_scaled[top_cols]
 
@@ -525,12 +521,13 @@ model = KernelRidge(kernel='rbf', alpha=0.1, gamma=0.01)
 oof_r, prediction_r = train_model(X=X_train_scaled, X_test=X_test_scaled, params=None, model_type='sklearn', model=model)
 
 train_stack = np.vstack([oof_lgb, oof_xgb, oof_r, oof_cat]).transpose()
-
 train_stack = pd.DataFrame(train_stack, columns = ['lgb', 'xgb', 'r', 'cat'])
-
+test_stack = np.vstack([prediction_lgb, prediction_xgb, prediction_r, prediction_cat]).transpose()
+test_stack = pd.DataFrame(test_stack)
 oof_lgb_stack, prediction_lgb_stack, feature_importance = train_model(X=train_stack, X_test=test_stack, params=params, model_type='lgb', plot_feature_importance=True)
 
 plt.figure(figsize=(18, 8))
+
 plt.subplot(2, 3, 1)
 plt.plot(y_tr, color='g', label='y_train')
 plt.plot(oof_lgb, color='b', label='lgb')
@@ -542,16 +539,19 @@ plt.plot(y_tr, color='g', label='y_train')
 plt.plot(oof_xgb, color='teal', label='xgb')
 plt.legend(loc=(1, 0.5));
 plt.title('xgb');
-plt.subplot(2, 3, 3)
-plt.plot(y_tr, color='g', label='y_train')
-plt.plot(oof_svr, color='red', label='svr')
-plt.legend(loc=(1, 0.5));
-plt.title('svr');
+
+#plt.subplot(2, 3, 3)
+#plt.plot(y_tr, color='g', label='y_train')
+#plt.plot(oof_svr, color='red', label='svr')
+#plt.legend(loc=(1, 0.5));
+#plt.title('svr');
+
 plt.subplot(2, 3, 4)
 plt.plot(y_tr, color='g', label='y_train')
 plt.plot(oof_cat, color='b', label='cat')
 plt.legend(loc=(1, 0.5));
 plt.title('cat');
+
 plt.subplot(2, 3, 5)
 plt.plot(y_tr, color='g', label='y_train')
 plt.plot(oof_lgb_stack, color='gold', label='stack')
@@ -559,10 +559,24 @@ plt.legend(loc=(1, 0.5));
 plt.title('blend');
 plt.legend(loc=(1, 0.5));
 plt.suptitle('Predictions vs actual');
+
 plt.subplot(2, 3, 6)
 plt.plot(y_tr, color='g', label='y_train')
-plt.plot((oof_lgb + oof_xgb + oof_svr + oof_svr1 + oof_r + oof_cat) / 6, color='gold', label='blend')
+plt.plot((oof_lgb + oof_xgb + oof_r + oof_cat) / 6, color='gold', label='blend')
 plt.legend(loc=(1, 0.5));
 plt.title('blend');
 plt.legend(loc=(1, 0.5));
 plt.suptitle('Predictions vs actual');
+
+#plt.show()
+
+#MAKE SUBMISSION FILE 
+if (READ_WHOLE_TEST_DATA):
+    submission = pd.read_csv(SUBMISSON_PATH, index_col='seg_id')
+else:
+    submission = pd.read_csv(SUBMISSON_PATH, index_col='seg_id', nrows = 3)
+
+submission['time_to_failure'] = (prediction_lgb + prediction_xgb + prediction_cat + prediction_r) / 4
+# submission['time_to_failure'] = prediction_lgb_stack
+print(submission.head())
+submission.to_csv(f'{DATA_PATH}\\submission.csv')
