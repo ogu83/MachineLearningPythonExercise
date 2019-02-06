@@ -19,3 +19,4 @@ Halite3_Python3_Linux-AMD64/logs/*
 /LANLEarthquakePrediction/cat_feature_index.8e94807c-6f002e1-89505e33-887f66be.tmp
 /LANLEarthquakePrediction/catboost_info
 *.suo
+/LANLEarthquakePrediction/DNNRegressors

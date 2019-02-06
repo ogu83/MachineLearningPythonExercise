@@ -19,6 +19,8 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold, KFold, RepeatedKFold
 from sklearn.metrics import mean_absolute_error
 from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor, BaggingRegressor
+
 import gc
 import seaborn as sns
 import warnings
@@ -58,7 +60,6 @@ def classic_sta_lta(x, length_sta, length_lta):
     lta[idx] = dtiny
 
     return sta / lta
-
 
 DATA_PATH = "D:\\LANLEarthquakeData"
 TRAIN_DATA_PATH = f"{DATA_PATH}\\train.csv"
@@ -411,6 +412,20 @@ def train_model(X=X_train_scaled, X_test=X_test_scaled, y=y_tr, params=None, fol
         print('Fold', fold_n, 'started at', time.ctime())
         X_train, X_valid = X.iloc[train_index], X.iloc[valid_index]
         y_train, y_valid = y.iloc[train_index], y.iloc[valid_index]
+
+        if model_type == 'rndForest':
+            model = RandomForestRegressor(n_estimators=100, #100 trees (Default of 10 is too small)
+                                            max_features=0.5, #Max number of features each tree can use 
+                                            min_samples_leaf=30, #Min amount of samples in each leaf
+                                            random_state=11)
+            model.fit(X_train, y_train)
+
+            y_pred_valid = model.predict(X_valid).reshape(-1,)
+            score = mean_absolute_error(y_valid, y_pred_valid)
+            print(f'RandomForestRegressor: Fold {fold_n}. MAE: {score:.4f}.')
+            print('')
+            
+            y_pred = model.predict(X_test).reshape(-1,)
         
         if model_type == 'lgb':
             model = lgb.LGBMRegressor(**params, n_estimators = 50000, n_jobs = -1)
@@ -488,6 +503,9 @@ def train_model(X=X_train_scaled, X_test=X_test_scaled, y=y_tr, params=None, fol
 # X_train_scaled = X_train_scaled[top_cols]
 # X_test_scaled = X_test_scaled[top_cols]
 
+print("******Random Forest Started******")
+oof_rnd, prediction_rnd = train_model(X=X_train_scaled, X_test=X_test_scaled, params=None, model_type='rndForest')
+
 params = {
     'num_leaves': 54,
     'min_data_in_leaf': 79,
@@ -503,6 +521,7 @@ params = {
     'reg_alpha': 0.1302650970728192,
     'reg_lambda': 0.3603427518866501
 }
+print("******LGB Started******")
 oof_lgb, prediction_lgb, feature_importance = train_model(params=params, model_type='lgb', plot_feature_importance=True)
 
 xgb_params = {'eta': 0.05,
@@ -512,33 +531,41 @@ xgb_params = {'eta': 0.05,
               'eval_metric': 'mae',
               'silent': True,
               'nthread': 4}
+print("******XGB Started******")
 oof_xgb, prediction_xgb = train_model(X=X_train_scaled, X_test=X_test_scaled, params=xgb_params, model_type='xgb')
 
-params = {'loss_function':'MAE'}
-oof_cat, prediction_cat = train_model(X=X_train_scaled, X_test=X_test_scaled, params=params, model_type='cat')
+#params = {'loss_function':'MAE'}
+#print("CAT Started")
+#oof_cat, prediction_cat = train_model(X=X_train_scaled, X_test=X_test_scaled, params=params, model_type='cat')
 
 model = KernelRidge(kernel='rbf', alpha=0.1, gamma=0.01)
+print("******Sklearn Started******")
 oof_r, prediction_r = train_model(X=X_train_scaled, X_test=X_test_scaled, params=None, model_type='sklearn', model=model)
 
-train_stack = np.vstack([oof_lgb, oof_xgb, oof_r, oof_cat]).transpose()
-train_stack = pd.DataFrame(train_stack, columns = ['lgb', 'xgb', 'r', 'cat'])
-test_stack = np.vstack([prediction_lgb, prediction_xgb, prediction_r, prediction_cat]).transpose()
+#train_stack = np.vstack([oof_lgb, oof_xgb, oof_r, oof_cat]).transpose()
+#train_stack = pd.DataFrame(train_stack, columns = ['lgb', 'xgb', 'r', 'cat'])
+#test_stack = np.vstack([prediction_lgb, prediction_xgb, prediction_r, prediction_cat]).transpose()
+train_stack = np.vstack([oof_lgb, oof_xgb, oof_r, oof_rnd]).transpose()
+train_stack = pd.DataFrame(train_stack, columns = ['lgb', 'xgb', 'r', 'rnd'])
+test_stack = np.vstack([prediction_lgb, prediction_xgb, prediction_r, prediction_rnd]).transpose()
+
 test_stack = pd.DataFrame(test_stack)
+print("******LGB_STACK STARTED******")
 oof_lgb_stack, prediction_lgb_stack, feature_importance = train_model(X=train_stack, X_test=test_stack, params=params, model_type='lgb', plot_feature_importance=True)
 
-plt.figure(figsize=(18, 8))
+#plt.figure(figsize=(18, 8))
 
-plt.subplot(2, 3, 1)
-plt.plot(y_tr, color='g', label='y_train')
-plt.plot(oof_lgb, color='b', label='lgb')
-plt.legend(loc=(1, 0.5));
-plt.title('lgb');
+#plt.subplot(2, 3, 1)
+#plt.plot(y_tr, color='g', label='y_train')
+#plt.plot(oof_lgb, color='b', label='lgb')
+#plt.legend(loc=(1, 0.5));
+#plt.title('lgb');
 
-plt.subplot(2, 3, 2)
-plt.plot(y_tr, color='g', label='y_train')
-plt.plot(oof_xgb, color='teal', label='xgb')
-plt.legend(loc=(1, 0.5));
-plt.title('xgb');
+#plt.subplot(2, 3, 2)
+#plt.plot(y_tr, color='g', label='y_train')
+#plt.plot(oof_xgb, color='teal', label='xgb')
+#plt.legend(loc=(1, 0.5));
+#plt.title('xgb');
 
 #plt.subplot(2, 3, 3)
 #plt.plot(y_tr, color='g', label='y_train')
@@ -546,27 +573,27 @@ plt.title('xgb');
 #plt.legend(loc=(1, 0.5));
 #plt.title('svr');
 
-plt.subplot(2, 3, 4)
-plt.plot(y_tr, color='g', label='y_train')
-plt.plot(oof_cat, color='b', label='cat')
-plt.legend(loc=(1, 0.5));
-plt.title('cat');
+#plt.subplot(2, 3, 4)
+#plt.plot(y_tr, color='g', label='y_train')
+#plt.plot(oof_cat, color='b', label='cat')
+#plt.legend(loc=(1, 0.5));
+#plt.title('cat');
 
-plt.subplot(2, 3, 5)
-plt.plot(y_tr, color='g', label='y_train')
-plt.plot(oof_lgb_stack, color='gold', label='stack')
-plt.legend(loc=(1, 0.5));
-plt.title('blend');
-plt.legend(loc=(1, 0.5));
-plt.suptitle('Predictions vs actual');
+#plt.subplot(2, 3, 5)
+#plt.plot(y_tr, color='g', label='y_train')
+#plt.plot(oof_lgb_stack, color='gold', label='stack')
+#plt.legend(loc=(1, 0.5));
+#plt.title('blend');
+#plt.legend(loc=(1, 0.5));
+#plt.suptitle('Predictions vs actual');
 
-plt.subplot(2, 3, 6)
-plt.plot(y_tr, color='g', label='y_train')
-plt.plot((oof_lgb + oof_xgb + oof_r + oof_cat) / 6, color='gold', label='blend')
-plt.legend(loc=(1, 0.5));
-plt.title('blend');
-plt.legend(loc=(1, 0.5));
-plt.suptitle('Predictions vs actual');
+#plt.subplot(2, 3, 6)
+#plt.plot(y_tr, color='g', label='y_train')
+#plt.plot((oof_lgb + oof_xgb + oof_r + oof_cat) / 6, color='gold', label='blend')
+#plt.legend(loc=(1, 0.5));
+#plt.title('blend');
+#plt.legend(loc=(1, 0.5));
+#plt.suptitle('Predictions vs actual');
 
 #plt.show()
 
@@ -576,7 +603,7 @@ if (READ_WHOLE_TEST_DATA):
 else:
     submission = pd.read_csv(SUBMISSON_PATH, index_col='seg_id', nrows = 3)
 
-submission['time_to_failure'] = (prediction_lgb + prediction_xgb + prediction_cat + prediction_r) / 4
+submission['time_to_failure'] = (prediction_lgb + prediction_xgb + prediction_r + prediction_rnd) / 4
 # submission['time_to_failure'] = prediction_lgb_stack
 print(submission.head())
 submission.to_csv(f'{DATA_PATH}\\submission.csv')
