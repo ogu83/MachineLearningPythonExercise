@@ -503,8 +503,8 @@ def train_model(X=X_train_scaled, X_test=X_test_scaled, y=y_tr, params=None, fol
 # X_train_scaled = X_train_scaled[top_cols]
 # X_test_scaled = X_test_scaled[top_cols]
 
-print("******Random Forest Started******")
-oof_rnd, prediction_rnd = train_model(X=X_train_scaled, X_test=X_test_scaled, params=None, model_type='rndForest')
+#print("******Random Forest Started******")
+#oof_rnd, prediction_rnd = train_model(X=X_train_scaled, X_test=X_test_scaled, params=None, model_type='rndForest')
 
 params = {
     'num_leaves': 54,
@@ -534,20 +534,20 @@ xgb_params = {'eta': 0.05,
 print("******XGB Started******")
 oof_xgb, prediction_xgb = train_model(X=X_train_scaled, X_test=X_test_scaled, params=xgb_params, model_type='xgb')
 
-#params = {'loss_function':'MAE'}
-#print("CAT Started")
-#oof_cat, prediction_cat = train_model(X=X_train_scaled, X_test=X_test_scaled, params=params, model_type='cat')
+params = {'loss_function':'MAE'}
+print("CAT Started")
+oof_cat, prediction_cat = train_model(X=X_train_scaled, X_test=X_test_scaled, params=params, model_type='cat')
 
 model = KernelRidge(kernel='rbf', alpha=0.1, gamma=0.01)
 print("******Sklearn Started******")
 oof_r, prediction_r = train_model(X=X_train_scaled, X_test=X_test_scaled, params=None, model_type='sklearn', model=model)
 
-#train_stack = np.vstack([oof_lgb, oof_xgb, oof_r, oof_cat]).transpose()
-#train_stack = pd.DataFrame(train_stack, columns = ['lgb', 'xgb', 'r', 'cat'])
-#test_stack = np.vstack([prediction_lgb, prediction_xgb, prediction_r, prediction_cat]).transpose()
-train_stack = np.vstack([oof_lgb, oof_xgb, oof_r, oof_rnd]).transpose()
-train_stack = pd.DataFrame(train_stack, columns = ['lgb', 'xgb', 'r', 'rnd'])
-test_stack = np.vstack([prediction_lgb, prediction_xgb, prediction_r, prediction_rnd]).transpose()
+train_stack = np.vstack([oof_lgb, oof_xgb, oof_r, oof_cat]).transpose()
+train_stack = pd.DataFrame(train_stack, columns = ['lgb', 'xgb', 'r', 'cat'])
+test_stack = np.vstack([prediction_lgb, prediction_xgb, prediction_r, prediction_cat]).transpose()
+#train_stack = np.vstack([oof_lgb, oof_xgb, oof_r, oof_rnd]).transpose()
+#train_stack = pd.DataFrame(train_stack, columns = ['lgb', 'xgb', 'r', 'rnd'])
+#test_stack = np.vstack([prediction_lgb, prediction_xgb, prediction_r, prediction_rnd]).transpose()
 
 test_stack = pd.DataFrame(test_stack)
 print("******LGB_STACK STARTED******")

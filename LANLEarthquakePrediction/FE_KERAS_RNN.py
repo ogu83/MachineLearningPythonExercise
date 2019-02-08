@@ -26,8 +26,8 @@ NP_DATA_PATH = f"{DATA_PATH}\\np"
 PICKLE_PATH = f"{DATA_PATH}\\pickle"
 MODEL_PATH = f"{DATA_PATH}\\models"
 
-Y_TRAIN_PICKLE = f"{PICKLE_PATH}\\y_train.pickle"
-X_TRAIN_PICKLE = f"{PICKLE_PATH}\\x_train.pickle"
+Y_TRAIN_PICKLE = f"{PICKLE_PATH}\\y_train1.pickle"
+X_TRAIN_PICKLE = f"{PICKLE_PATH}\\x_train1.pickle"
 X_TEST_PICKLE = f"{PICKLE_PATH}\\x_test.pickle"
 
 X_train_scaled = pd.read_pickle(X_TRAIN_PICKLE)
@@ -50,32 +50,26 @@ y = np.array(y_tr)
 
 n_features = len(X_train_scaled.columns)
 
-BATCH_SIZE = 32
-EPOCHS = 1000
-#EPOCHS = 80
-#modelName = f"Keras_E{EPOCHS}_4R_4R_1L_ADAM" #1.8402
-#modelName = f"Keras_E{EPOCHS}_4R_4R_4R_1L_ADAM" #1.8757
-#modelName = f"Keras_E{EPOCHS}_{n_features}R_{n_features}R_1L_ADAM" 
-#modelName = f"Keras_E{EPOCHS}_8R_4R_1L_ADAM" 
-#modelName = f"Keras_E{EPOCHS}_4R{n_features}_1L_ADAM" 
-#modelName = f"Keras_E{EPOCHS}_12R_8R_1L_ADAM" 
-#modelName = f"Keras_E{EPOCHS}_4R_4R_1L_ADAM_v1"
-modelName = f"Keras_E{EPOCHS}_4R_4R_1L_RMSPROP"
+BATCH_SIZE = 50
+EPOCHS = 500
+modelName = f"Keras_E{EPOCHS}_6R3_1_ADAM_KERNELN"
 
 model = Sequential(name=modelName)
 cb = keras.callbacks.TensorBoard(log_dir=f'./DNNRegressors/{modelName}/', 
                             histogram_freq=0, 
                             batch_size=BATCH_SIZE, write_graph=True, write_grads=False, write_images=False, embeddings_freq=0, 
                             embeddings_layer_names=None, embeddings_metadata=None, embeddings_data=None, update_freq='epoch')
+
 if (os.path.exists(f"{MODEL_PATH}\\{model.name}.h5")):    
     model = load_model(f"{MODEL_PATH}\\{model.name}.h5")
     print("Model Loaded.", modelName)
 else:    
     print("Training Model", modelName)
-    model.add(Dense(4, input_dim=n_features, activation='relu'))
-    model.add(Dense(4, activation='relu'))    
-    model.add(Dense(1, activation='linear'))
-    model.compile(loss='mae', optimizer='rmsprop', metrics=['mae'])
+    model.add(Dense(6, input_dim=n_features, activation='relu'))
+    model.add(Dense(6, activation='relu'))
+    model.add(Dense(6, activation='relu'))      
+    model.add(Dense(1))
+    model.compile(loss='mae', optimizer='adam', metrics=['mae'])
     model.fit(X, y, validation_split = 0.2, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=1, callbacks=[cb], shuffle=True)
     model.save(f"{MODEL_PATH}\\{model.name}.h5")
     print("Model Saved.", modelName)
@@ -89,5 +83,5 @@ print("Prediction Completed")
 submission = pd.read_csv(SUBMISSON_PATH, index_col='seg_id')
 submission['time_to_failure'] = y_pred
 print(submission.head())
-submission.to_csv(f'{DATA_PATH}\\submission.csv')
+submission.to_csv(f'{DATA_PATH}\\submission{modelName}.csv')
 print("Submission File Created")
