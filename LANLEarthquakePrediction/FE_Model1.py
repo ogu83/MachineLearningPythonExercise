@@ -61,6 +61,12 @@ def classic_sta_lta(x, length_sta, length_lta):
 
     return sta / lta
 
+def clean_dataset(df):
+    assert isinstance(df, pd.DataFrame), "df needs to be a pd.DataFrame"
+    df.dropna(inplace=True)
+    indices_to_keep = ~df.isin([np.nan, np.inf, -np.inf]).any(1)
+    return df[indices_to_keep].astype(np.float64)
+
 DATA_PATH = "D:\\LANLEarthquakeData"
 TRAIN_DATA_PATH = f"{DATA_PATH}\\train.csv"
 TEST_DATA_PATH = f"{DATA_PATH}\\test"
@@ -73,7 +79,7 @@ PICKLE_PATH = f"{DATA_PATH}\\pickle"
 
 Y_TRAIN_PICKLE = f"{PICKLE_PATH}\\y_train2.pickle"
 X_TRAIN_PICKLE = f"{PICKLE_PATH}\\x_train2.pickle"
-X_TEST_PICKLE = f"{PICKLE_PATH}\\x_test.pickle"
+X_TEST_PICKLE = f"{PICKLE_PATH}\\x_test2.pickle"
 
 if os.path.exists(Y_TRAIN_PICKLE) and os.path.exists(X_TRAIN_PICKLE):
     X_train_scaled = pd.read_pickle(X_TRAIN_PICKLE)
@@ -86,7 +92,7 @@ else:
     if READ_WHOLE_TRAIN_DATA:
         train = pd.read_csv(TRAIN_DATA_PATH, dtype={'acoustic_data': np.int16, 'time_to_failure': np.float32})
     else:
-        train = pd.read_csv(TRAIN_DATA_PATH, dtype={'acoustic_data': np.int16, 'time_to_failure': np.float32}, nrows=500_000)
+        train = pd.read_csv(TRAIN_DATA_PATH, dtype={'acoustic_data': np.int16, 'time_to_failure': np.float32}, nrows=5_000_000)
 
     rows = TRAINING_DERIVED_ROW_COUNT
     segments = int(np.floor(train.shape[0] / rows))
@@ -101,24 +107,25 @@ else:
     y_tr = pd.DataFrame(index=range(segments+segments1+segments2+segments3+segments4+segments5+segments6+segments7-1), dtype=np.float64, columns=['time_to_failure'])
 
     ittr = 0;    
-
-    total_mean = train['acoustic_data'].mean()
-    total_std = train['acoustic_data'].std()
-    total_max = train['acoustic_data'].max()
-    total_min = train['acoustic_data'].min()
-    total_sum = train['acoustic_data'].sum()
-    total_abs_sum = np.abs(train['acoustic_data']).sum()
-
-    print("TOTALS")
-    print(f"Mean: {total_mean}")
-    print(f"Std: {total_std}")
-    print(f"Max: {total_max}")
-    print(f"Min: {total_min}")
-    print(f"Sum: {total_sum}")
-    print(f"Abs Sum: {total_abs_sum}")
     
     for tSegment in tqdm(range(0, 8)):
+        
         train = train[rows//8:]
+        total_mean = train['acoustic_data'].mean()
+        total_std = train['acoustic_data'].std()
+        total_max = train['acoustic_data'].max()
+        total_min = train['acoustic_data'].min()
+        total_sum = train['acoustic_data'].sum()
+        total_abs_sum = np.abs(train['acoustic_data']).sum()
+
+        print("TOTALS")
+        print(f"Mean: {total_mean}")
+        print(f"Std: {total_std}")
+        print(f"Max: {total_max}")
+        print(f"Min: {total_min}")
+        print(f"Sum: {total_sum}")
+        print(f"Abs Sum: {total_abs_sum}")
+
         segments = int(np.floor(train.shape[0] / rows))
         #Arrange X Training Data COLS and Values
         for segment in tqdm(range(segments)):
@@ -198,9 +205,7 @@ else:
             X_tr.loc[segment+ittr, 'classic_sta_lta7_mean'] = classic_sta_lta(x, 333, 666).mean()
             X_tr.loc[segment+ittr, 'classic_sta_lta8_mean'] = classic_sta_lta(x, 4000, 10000).mean()
             X_tr.loc[segment+ittr, 'Moving_average_700_mean'] = x.rolling(window=700).mean().mean(skipna=True)
-            X_tr.loc[segment+ittr, 'Moving_average_1500_mean'] = x.rolling(window=1500).mean().mean(skipna=True)
-            X_tr.loc[segment+ittr, 'Moving_average_3000_mean'] = x.rolling(window=3000).mean().mean(skipna=True)
-            X_tr.loc[segment+ittr, 'Moving_average_6000_mean'] = x.rolling(window=6000).mean().mean(skipna=True)
+            
             ewma = pd.Series.ewm
             X_tr.loc[segment+ittr, 'exp_Moving_average_300_mean'] = (ewma(x, span=300).mean()).mean(skipna=True)
             X_tr.loc[segment+ittr, 'exp_Moving_average_3000_mean'] = ewma(x, span=3000).mean().mean(skipna=True)
@@ -213,6 +218,7 @@ else:
             X_tr.loc[segment+ittr,'MA_400MA_BB_high_mean'] = (X_tr.loc[segment, 'Moving_average_700_mean'] + no_of_std * X_tr.loc[segment, 'MA_400MA_std_mean']).mean()
             X_tr.loc[segment+ittr,'MA_400MA_BB_low_mean'] = (X_tr.loc[segment, 'Moving_average_700_mean'] - no_of_std * X_tr.loc[segment, 'MA_400MA_std_mean']).mean()
             X_tr.loc[segment+ittr, 'MA_1000MA_std_mean'] = x.rolling(window=1000).std().mean()
+            X_tr.drop('Moving_average_700_mean', axis=1, inplace=True)
     
             X_tr.loc[segment+ittr, 'iqr'] = np.subtract(*np.percentile(x, [75, 25]))
             X_tr.loc[segment+ittr, 'q999'] = np.quantile(x,0.999)
@@ -253,18 +259,24 @@ else:
     np.abs(X_tr.corrwith(y_tr['time_to_failure'])).sort_values(ascending=False).head(12)
 
     # fillna in new columns
-    classic_sta_lta5_mean_fill = X_tr.loc[X_tr['classic_sta_lta5_mean'] != -np.inf, 'classic_sta_lta5_mean'].mean()
-    X_tr.loc[X_tr['classic_sta_lta5_mean'] == -np.inf, 'classic_sta_lta5_mean'] = classic_sta_lta5_mean_fill
-    X_tr['classic_sta_lta5_mean'] = X_tr['classic_sta_lta5_mean'].fillna(classic_sta_lta5_mean_fill)
-    classic_sta_lta7_mean_fill = X_tr.loc[X_tr['classic_sta_lta7_mean'] != -np.inf, 'classic_sta_lta7_mean'].mean()
-    X_tr.loc[X_tr['classic_sta_lta7_mean'] == -np.inf, 'classic_sta_lta7_mean'] = classic_sta_lta7_mean_fill
-    X_tr['classic_sta_lta7_mean'] = X_tr['classic_sta_lta7_mean'].fillna(classic_sta_lta7_mean_fill)
+    #classic_sta_lta5_mean_fill = X_tr.loc[X_tr['classic_sta_lta5_mean'] != -np.inf, 'classic_sta_lta5_mean'].mean()
+    #X_tr.loc[X_tr['classic_sta_lta5_mean'] == -np.inf, 'classic_sta_lta5_mean'] = classic_sta_lta5_mean_fill
+    #X_tr['classic_sta_lta5_mean'] = X_tr['classic_sta_lta5_mean'].fillna(classic_sta_lta5_mean_fill)
+    #classic_sta_lta7_mean_fill = X_tr.loc[X_tr['classic_sta_lta7_mean'] != -np.inf, 'classic_sta_lta7_mean'].mean()
+    #X_tr.loc[X_tr['classic_sta_lta7_mean'] == -np.inf, 'classic_sta_lta7_mean'] = classic_sta_lta7_mean_fill
+    #X_tr['classic_sta_lta7_mean'] = X_tr['classic_sta_lta7_mean'].fillna(classic_sta_lta7_mean_fill)
+    
+    X_tr.to_pickle(X_TRAIN_PICKLE)
+    print("x_train_NOT_scaled.pickle saved")
 
     scaler = StandardScaler()
+    X_tr = clean_dataset(X_tr)
     scaler.fit(X_tr)
+
     X_train_scaled = pd.DataFrame(scaler.transform(X_tr), columns=X_tr.columns)
-    X_train_scaled.to_pickle(X_TRAIN_PICKLE)    
+    X_train_scaled.to_pickle(X_TRAIN_PICKLE)
     print("x_train_scaled.pickle saved")
+    
     y_tr.to_pickle(Y_TRAIN_PICKLE)
     print("y_train_scaled.pickle saved")
 
@@ -358,9 +370,7 @@ else:
         X_test.loc[seg_id, 'classic_sta_lta7_mean'] = classic_sta_lta(x, 333, 666).mean()
         X_test.loc[seg_id, 'classic_sta_lta8_mean'] = classic_sta_lta(x, 4000, 10000).mean()
         X_test.loc[seg_id, 'Moving_average_700_mean'] = x.rolling(window=700).mean().mean(skipna=True)
-        X_test.loc[seg_id, 'Moving_average_1500_mean'] = x.rolling(window=1500).mean().mean(skipna=True)
-        X_test.loc[seg_id, 'Moving_average_3000_mean'] = x.rolling(window=3000).mean().mean(skipna=True)
-        X_test.loc[seg_id, 'Moving_average_6000_mean'] = x.rolling(window=6000).mean().mean(skipna=True)
+        
         ewma = pd.Series.ewm
         X_test.loc[seg_id, 'exp_Moving_average_300_mean'] = (ewma(x, span=300).mean()).mean(skipna=True)
         X_test.loc[seg_id, 'exp_Moving_average_3000_mean'] = ewma(x, span=3000).mean().mean(skipna=True)
@@ -371,8 +381,9 @@ else:
         X_test.loc[seg_id,'MA_700MA_BB_low_mean'] = (X_test.loc[seg_id, 'Moving_average_700_mean'] - no_of_std * X_test.loc[seg_id, 'MA_700MA_std_mean']).mean()
         X_test.loc[seg_id, 'MA_400MA_std_mean'] = x.rolling(window=400).std().mean()
         X_test.loc[seg_id,'MA_400MA_BB_high_mean'] = (X_test.loc[seg_id, 'Moving_average_700_mean'] + no_of_std * X_test.loc[seg_id, 'MA_400MA_std_mean']).mean()
-        X_test.loc[seg_id,'MA_400MA_BB_low_mean'] = (X_test.loc[seg_id, 'Moving_average_700_mean'] - no_of_std * X_test.loc[seg_id, 'MA_400MA_std_mean']).mean()
+        X_test.loc[seg_id,'MA_400MA_BB_low_mean'] = (X_test.loc[seg_id, 'Moving_average_700_mean'] - no_of_std * X_test.loc[seg_id, 'MA_400MA_std_mean']).mean()        
         X_test.loc[seg_id, 'MA_1000MA_std_mean'] = x.rolling(window=1000).std().mean()
+        X_test.drop('Moving_average_700_mean', axis=1, inplace=True)
     
         X_test.loc[seg_id, 'iqr'] = np.subtract(*np.percentile(x, [75, 25]))
         X_test.loc[seg_id, 'q999'] = np.quantile(x,0.999)
@@ -405,16 +416,11 @@ else:
             X_test.loc[seg_id, 'q99_roll_mean_' + str(windows)] = np.quantile(x_roll_mean, 0.99)
             X_test.loc[seg_id, 'av_change_abs_roll_mean_' + str(windows)] = np.mean(np.diff(x_roll_mean))
             X_test.loc[seg_id, 'av_change_rate_roll_mean_' + str(windows)] = np.mean(np.nonzero((np.diff(x_roll_mean) / x_roll_mean[:-1]))[0])
-            X_test.loc[seg_id, 'abs_max_roll_mean_' + str(windows)] = np.abs(x_roll_mean).max()
-    
-        if i < 12:
-            plt.subplot(6, 4, i + 1)
-            plt.plot(seg['acoustic_data'])
-            plt.title(seg_id)
+            X_test.loc[seg_id, 'abs_max_roll_mean_' + str(windows)] = np.abs(x_roll_mean).max()           
     
     # fillna in new columns
-    X_test.loc[X_test['classic_sta_lta5_mean'] == -np.inf, 'classic_sta_lta5_mean'] = classic_sta_lta5_mean_fill
-    X_test.loc[X_test['classic_sta_lta7_mean'] == -np.inf, 'classic_sta_lta7_mean'] = classic_sta_lta7_mean_fill
+    #X_test.loc[X_test['classic_sta_lta5_mean'] == -np.inf, 'classic_sta_lta5_mean'] = classic_sta_lta5_mean_fill
+    #X_test.loc[X_test['classic_sta_lta7_mean'] == -np.inf, 'classic_sta_lta7_mean'] = classic_sta_lta7_mean_fill
     X_test_scaled = pd.DataFrame(scaler.transform(X_test), columns=X_test.columns)
     X_test_scaled.to_pickle(X_TEST_PICKLE)
     print("x_test_scaled.pickle saved")
@@ -574,4 +580,4 @@ else:
 submission['time_to_failure'] = (prediction_lgb + prediction_xgb + prediction_r + prediction_cat) / 4
 # submission['time_to_failure'] = prediction_lgb_stack
 print(submission.head())
-submission.to_csv(f'{DATA_PATH}\\submission.csv')
+submission.to_csv(f'{DATA_PATH}\\submission_lgb_xgb_cat_sklearn_33000.csv')

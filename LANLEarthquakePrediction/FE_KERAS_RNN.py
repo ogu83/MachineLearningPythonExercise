@@ -52,7 +52,7 @@ n_features = len(X_train_scaled.columns)
 
 BATCH_SIZE = 50
 EPOCHS = 500
-modelName = f"Keras_E{EPOCHS}_6R3_1_ADAM_KERNELN"
+modelName = f"Keras_E{EPOCHS}_6R10_1_ADAM_KERNELN_v1"
 
 model = Sequential(name=modelName)
 cb = keras.callbacks.TensorBoard(log_dir=f'./DNNRegressors/{modelName}/', 
@@ -65,9 +65,16 @@ if (os.path.exists(f"{MODEL_PATH}\\{model.name}.h5")):
     print("Model Loaded.", modelName)
 else:    
     print("Training Model", modelName)
-    model.add(Dense(6, input_dim=n_features, activation='relu'))
+    model.add(Dense(6, input_dim=n_features, activation='relu'))    
     model.add(Dense(6, activation='relu'))
     model.add(Dense(6, activation='relu'))      
+    model.add(Dense(6, activation='relu'))
+    model.add(Dense(6, activation='relu'))
+    model.add(Dense(6, activation='relu'))
+    model.add(Dense(6, activation='relu'))
+    model.add(Dense(6, activation='relu'))
+    model.add(Dense(6, activation='relu'))
+    model.add(Dense(6, activation='relu'))
     model.add(Dense(1))
     model.compile(loss='mae', optimizer='adam', metrics=['mae'])
     model.fit(X, y, validation_split = 0.2, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=1, callbacks=[cb], shuffle=True)
