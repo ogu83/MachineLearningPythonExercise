@@ -65,15 +65,15 @@ DATA_PATH = "D:\\LANLEarthquakeData"
 TRAIN_DATA_PATH = f"{DATA_PATH}\\train.csv"
 TEST_DATA_PATH = f"{DATA_PATH}\\test"
 SUBMISSON_PATH = f"{DATA_PATH}\\sample_submission.csv"
-TRAINING_DERIVED_ROW_COUNT = 150
+TRAINING_DERIVED_ROW_COUNT = 1500000
 READ_WHOLE_TRAIN_DATA = True
 READ_WHOLE_TEST_DATA = True
 NP_DATA_PATH = f"{DATA_PATH}\\np"
 PICKLE_PATH = f"{DATA_PATH}\\pickle"
 
-Y_TRAIN_PICKLE = f"{PICKLE_PATH}\\y_train3.pickle"
-X_TRAIN_PICKLE = f"{PICKLE_PATH}\\x_train3.pickle"
-X_TEST_PICKLE = f"{PICKLE_PATH}\\x_test3.pickle"
+Y_TRAIN_PICKLE = f"{PICKLE_PATH}\\y_train4.pickle"
+X_TRAIN_PICKLE = f"{PICKLE_PATH}\\x_train4.pickle"
+X_TEST_PICKLE = f"{PICKLE_PATH}\\x_test4.pickle"
 
 if os.path.exists(Y_TRAIN_PICKLE) and os.path.exists(X_TRAIN_PICKLE):
     X_train_scaled = pd.read_pickle(X_TRAIN_PICKLE)
@@ -260,7 +260,7 @@ else:
     else:
         submission = pd.read_csv(SUBMISSON_PATH, index_col='seg_id', nrows = 3)
 
-    X_test = pd.DataFrame(columns=X_tr.columns, dtype=np.float64, index=submission.index)
+    X_test = pd.DataFrame(columns=X_train_scaled.columns, dtype=np.float64, index=submission.index)
     plt.figure(figsize=(22, 16))
 
     #READ ALL SEGMENTS ACUSTIC DATA AND ARRANGE COLS AND VALUES

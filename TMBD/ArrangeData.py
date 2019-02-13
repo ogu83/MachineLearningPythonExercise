@@ -19,7 +19,6 @@ import datetime
 from catboost import CatBoostRegressor
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold, KFold, RepeatedKFold
-from sklearn.metrics import mean_absolute_error
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor, BaggingRegressor
 from sklearn import preprocessing, model_selection, neighbors, svm
@@ -75,81 +74,96 @@ def getIsoListFormJson(data, isoKey):
         ids.append(ccc)
     return ids
 
-def pushCategoryDataAsColumns(data, ids, colName):
-    print(colName)
+def pushCategoryDataAsColumns(data, ids, colName, isTest=False, trainData=pd.DataFrame()):
     for id in tqdm(range(len(ids))):
         for idd in tqdm(ids[id]):
             fullColName = colName + "_" + str(idd)
-            if fullColName not in data.columns:
-                 data[fullColName] = np.zeros(len(ids))
-            data[fullColName][id] = 1
+            if isTest:
+                if fullColName in trainData.columns:
+                    if fullColName not in data.columns:
+                         data[fullColName] = np.zeros(len(ids))
+                    data[fullColName][id] = 1
+            else:
+                if fullColName not in data.columns:
+                    data[fullColName] = np.zeros(len(ids))
+                    data[fullColName][id] = 1
 
 def isNaN(x):
     return str(x) == str(1e400*0)
 
-def arrangeData(data):    
-    retval = pd.DataFrame()    
+def arrangeData(data, isTest=False, trainData=[]):    
+    retval = pd.DataFrame(dtype=np.float64)    
     
-    print("belongs_to_collection_ids")
-    belongs_to_collection_ids = getIdListFromJson(data["belongs_to_collection"])
-    print("or_lang_ids")
-    or_lang_ids = getUniqueIdFromStringArray(data["original_language"])
-    print("genre_ids")
-    genre_ids = getIdListFromJson(data["genres"])
-    print("prod_comp_ids")
-    prod_comp_ids = getIdListFromJson(data["production_companies"])
-    print("prod_coutry_ids")
-    prod_coutry_ids = getIsoListFormJson(data["production_countries"],"iso_3166_1")
-    print("spoken_language_ids")
-    spoken_language_ids = getIsoListFormJson(data["spoken_languages"],"iso_639_1")
-    print("status_ids")
-    status_ids = getUniqueIdFromStringArray(data["status"])
-    print("keyword_ids")
-    keyword_ids = getIdListFromJson(data["Keywords"])
-    print("cast_ids")
-    cast_ids = getIdListFromJson(data["cast"])
-    print("crew_ids")
-    crew_ids = getIdListFromJson(data["crew"])
+    #print("belongs_to_collection_ids")
+    #belongs_to_collection_ids = getIdListFromJson(data["belongs_to_collection"])
+    #print("or_lang_ids")
+    #or_lang_ids = getUniqueIdFromStringArray(data["original_language"])
+    #print("genre_ids")
+    #genre_ids = getIdListFromJson(data["genres"])
+    #print("prod_comp_ids")
+    #prod_comp_ids = getIdListFromJson(data["production_companies"])
+    #print("prod_coutry_ids")
+    #prod_coutry_ids = getIsoListFormJson(data["production_countries"],"iso_3166_1")
+    #print("spoken_language_ids")
+    #spoken_language_ids = getIsoListFormJson(data["spoken_languages"],"iso_639_1")
+    #print("status_ids")
+    #status_ids = getUniqueIdFromStringArray(data["status"])
+    #print("keyword_ids")
+    #keyword_ids = getIdListFromJson(data["Keywords"])
+    #print("cast_ids")
+    #cast_ids = getIdListFromJson(data["cast"])
+    #print("crew_ids")
+    #crew_ids = getIdListFromJson(data["crew"])
 
     #retval["id"] = data["id"]
     
     #retval["collection"] = belongs_to_collection_ids
-    pushCategoryDataAsColumns(retval, belongs_to_collection_ids, "collection")
+    #pushCategoryDataAsColumns(retval, belongs_to_collection_ids, "collection")
 
     #retval["genre"] = genre_ids
-    pushCategoryDataAsColumns(retval, genre_ids, "genre")
+    #pushCategoryDataAsColumns(retval, genre_ids, "genre")
 
     retval["budget"] = data["budget"]
     
-    retval["or_lang"] = or_lang_ids
+    #retval["or_lang"] = or_lang_ids
     #pushCategoryDataAsColumns(retval, or_lang_ids, "or_lang")
 
     retval["popularity"] = data["popularity"]
     
     #retval["prod_comp"] = prod_comp_ids
-    pushCategoryDataAsColumns(retval, prod_comp_ids, "prod_comp")
+    #pushCategoryDataAsColumns(retval, prod_comp_ids, "prod_comp")
 
     #retval["prod_country"] = prod_coutry_ids
-    pushCategoryDataAsColumns(retval, prod_coutry_ids, "prod_country")
+    #pushCategoryDataAsColumns(retval, prod_coutry_ids, "prod_country")
 
     retval["runtime"] = data["runtime"]
     
     #retval["s_lang"] = spoken_language_ids
-    pushCategoryDataAsColumns(retval, spoken_language_ids, "s_lang")
+    #pushCategoryDataAsColumns(retval, spoken_language_ids, "s_lang")
 
-    retval["stat"] = status_ids
+    #retval["stat"] = status_ids
     #pushCategoryDataAsColumns(retval, status_ids, "stat")
 
     #retval["keywords"] = keyword_ids
-    pushCategoryDataAsColumns(retval, keyword_ids, "keywords")
+    #pushCategoryDataAsColumns(retval, keyword_ids, "keywords")
 
     #retval["cast"] = cast_ids
-    pushCategoryDataAsColumns(retval, cast_ids, "cast")
+    #pushCategoryDataAsColumns(retval, cast_ids, "cast")
 
     #retval["crew"] = crew_ids
-    pushCategoryDataAsColumns(retval, crew_ids, "crew")
+    #pushCategoryDataAsColumns(retval, crew_ids, "crew")
 
-    return retval;
+    if isTest == False:
+        retval["revenue"] = data["revenue"]    
+
+    return retval
+
+
+def clean_dataset(df):
+    assert isinstance(df, pd.DataFrame), "df needs to be a pd.DataFrame"
+    df.dropna(inplace=True)
+    indices_to_keep = ~df.isin([np.nan, np.inf, -np.inf]).any(1)
+    return df[indices_to_keep].astype(np.float64)
 
 TRAIN_DATA_PATH = "./train.csv"
 TEST_DATA_PATH = "./test.csv"
@@ -158,29 +172,40 @@ TR_X_PICKLE = "./tr_x.pickle"
 TR_Y_PICKLE = "./tr_y.pickle"
 TEST_X_PICKLE = "./test_x.pickle"
 
+scaler = StandardScaler()
+
 if (os.path.exists(TR_X_PICKLE) == False):
-    train = pd.read_csv(TRAIN_DATA_PATH)
+    train = pd.read_csv(TRAIN_DATA_PATH)    
+    
     tr_X = arrangeData(train)
-    tr_y = train[LABEL_COL_NAME]
-    tr_X.to_pickle(TR_X_PICKLE)
+    tr_X = clean_dataset(tr_X)    
+    #scaler.fit(tr_X)
+    #tr_X = pd.DataFrame(scaler.transform(tr_X), columns=tr_X.columns)
+    tr_y = tr_X[LABEL_COL_NAME]
+    tr_X.drop(columns=[LABEL_COL_NAME])
+    
+    tr_X.to_pickle(TR_X_PICKLE)        
     tr_y.to_pickle(TR_Y_PICKLE)
+        
 else:
     tr_X = pd.read_pickle(TR_X_PICKLE)
     tr_y = pd.read_pickle(TR_Y_PICKLE)
 
 print("Trainin Data")
-#print(tr_X.head())
+print(tr_X.head())
 print(tr_X.describe())
 #print(tr_y.head())
 
 if (os.path.exists(TEST_X_PICKLE) == False):
     test = pd.read_csv(TEST_DATA_PATH)
-    test_X = arrangeData(test)
+    test_X = arrangeData(test, True, tr_X)
+    #test_X = pd.DataFrame(scaler.transform(test_X), columns=tr_X.columns)
+    test_X.to_pickle(TEST_X_PICKLE)
 else:
     test_X = pd.read_pickle(TEST_X_PICKLE)
 
 print("Test Data")
-#print(test_X)
+#print(test_X.head())
 print(test_X.describe())
 
 X_train, X_test, y_train, y_test = model_selection.train_test_split(tr_X,tr_y,test_size=0.2)
@@ -189,7 +214,7 @@ rf = RandomForestRegressor(n_estimators=100, #100 trees (Default of 10 is too sm
                           max_features=0.5, #Max number of features each tree can use 
                           min_samples_leaf=30, #Min amount of samples in each leaf
                           random_state=11)
-rf.fit(X_train, y_train)
+rf.fit(np.transpose(np.matrix(X_train)), np.transpose(np.matrix(y_train)))
 
 accuracy = rf.score(X_test, y_test)
 print("Accuracy:", accuracy)
