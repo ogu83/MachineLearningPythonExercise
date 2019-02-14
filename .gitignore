@@ -20,3 +20,4 @@ Halite3_Python3_Linux-AMD64/logs/*
 /LANLEarthquakePrediction/catboost_info
 *.suo
 /LANLEarthquakePrediction/DNNRegressors
+/TMBD/DNNRegressors

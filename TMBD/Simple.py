@@ -17,24 +17,81 @@ import keras
 from keras.models import Sequential
 from keras.layers import Dense
 
+from tqdm import tqdm
+import json, ast
+
+
+def getUniqueIdFromString(value):
+    return int(abs(hash(value)) % (10 ** 8))
+
+def getUniqueIdFromStringArray(values):
+    return [getUniqueIdFromString(x) for x in values]
+
+def getIdListFromJson(data):
+    datas = data.values.flatten()
+    ids = []
+    for c in tqdm(datas):    
+        ccc = []
+        if isNaN(c) == False:
+            c = json.dumps(ast.literal_eval(c))        
+            c = json.loads(c)            
+            for cc in c:
+                ccInt = int(cc["id"])
+                ccc.append(ccInt)
+        else:
+            ccc.append(0)
+        ids.append(ccc)
+    return ids
+
+def getIsoListFormJson(data, isoKey):
+    datas = data.values.flatten()
+    ids = []
+    for c in tqdm(datas):    
+        ccc = []
+        if isNaN(c) == False:
+            c = json.dumps(ast.literal_eval(c))        
+            c = json.loads(c)            
+            for cc in c:
+                ccInt = getUniqueIdFromString(cc[isoKey])
+                ccc.append(ccInt)
+        else:
+            ccc.append(0)
+        ids.append(ccc)
+    return ids
+
+
+def isNaN(x):
+    return str(x) == str(1e400*0)
+
+
 TRAIN_DATA_PATH = "./train.csv"
 TEST_DATA_PATH = "./test.csv"
 LABEL_COL_NAME = "revenue"
 TAKE_COL_NAMES = ["budget","popularity","runtime"]
 WITH_PLOT = False
 
-train = pd.read_csv(TRAIN_DATA_PATH)
+train_main = pd.read_csv(TRAIN_DATA_PATH)
+
+drop_cols = list(filter(lambda c: c not in TAKE_COL_NAMES and c != LABEL_COL_NAME, train_main.columns))
+train = train_main.drop(columns=drop_cols)
 train.fillna(value=0.0, inplace = True) 
-drop_cols = list(filter(lambda c: c not in TAKE_COL_NAMES and c != LABEL_COL_NAME, train.columns))
-train = train.drop(columns=drop_cols)
-print("Length Train Data", len(train))
-#print(train)
+
+cast_ids = getIdListFromJson(train_main["cast"])
+unique_cast_ids = cast_ids
+crew_ids = getIdListFromJson(train_main["crew"])
+
+train["Has_HomePage"] = list(map(lambda c: float(c is not np.nan), train_main["homepage"]))
+train["CastCount"] = list(map(lambda c: float(len(c)), cast_ids))
+train["CrewCount"] = list(map(lambda c: float(len(c)), crew_ids))
+train["IsReleased"] = list(map(lambda c: float(c == "Released"), train_main["status"]))
+
+print(train.describe())
 
 train_X = train.drop([LABEL_COL_NAME], 1)
 train_Y = train[LABEL_COL_NAME]
 
 if WITH_PLOT:
-    for feature in TAKE_COL_NAMES:
+    for feature in train_X.columns:
         plt.scatter(train_X[feature], train_Y)
         plt.xlabel(feature)
         plt.ylabel(LABEL_COL_NAME)
@@ -93,17 +150,18 @@ y=np.array(train_Y)
 
 #y_pred = rf.predict(X_test, num_iteration=model.best_iteration_)
 
-EPOCHS = 500
+EPOCHS = 100
 BATCH_SIZE = 50
-modelName="v2"
+modelName="v6"
 cb = keras.callbacks.TensorBoard(log_dir=f'./DNNRegressors/{modelName}/', 
                             histogram_freq=0, 
                             batch_size=BATCH_SIZE, write_graph=True, write_grads=False, write_images=False, embeddings_freq=0, 
                             embeddings_layer_names=None, embeddings_metadata=None, embeddings_data=None, update_freq='epoch')
 
 model = Sequential(name=modelName)
-model.add(Dense(3, input_dim=len(TAKE_COL_NAMES), activation='relu'))
-model.add(Dense(128))
+model.add(Dense(6, input_dim=len(train_X.columns), activation='relu'))
+model.add(Dense(6))
+model.add(Dense(6))
 model.add(Dense(1))
 model.compile(loss='mse', optimizer='adam', metrics=['mse'])
 model.fit(X, y, validation_split = 0.2, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=1, callbacks=[cb], shuffle=True)

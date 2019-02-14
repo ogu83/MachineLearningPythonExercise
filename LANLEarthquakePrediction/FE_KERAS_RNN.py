@@ -76,7 +76,7 @@ else:
     model.add(Dense(6, activation='relu'))
     model.add(Dense(6, activation='relu'))
     model.add(Dense(1))
-    model.compile(loss='mae', optimizer='adam', metrics=['mae'])
+    model.compile(loss='mae', optimizer='adam', metrics=['mae','accuracy',])
     model.fit(X, y, validation_split = 0.2, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=1, callbacks=[cb], shuffle=True)
     model.save(f"{MODEL_PATH}\\{model.name}.h5")
     print("Model Saved.", modelName)
