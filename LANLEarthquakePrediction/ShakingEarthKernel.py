@@ -15,12 +15,12 @@ train = pd.read_csv(TRAIN_DATA_PATH, nrows=1_000_000)
 
 train.rename({"acoustic_data": "signal", "time_to_failure": "quaketime"}, axis="columns", inplace=True)
 #print(train.head(5))
-
 #print(train.describe())
 
 stepsize = np.diff(train.quaketime)
 train = train.drop(train.index[len(train)-1])
 train["stepsize"] = stepsize
+train.stepsize = train.stepsize.apply(lambda l: np.round(l, 10))
 #print(train.head(5))
 
 cv = TimeSeriesSplit(n_splits=5)
@@ -38,4 +38,4 @@ for window in window_sizes:
     train["rolling_skew"] = train.signal.rolling(window=window).skew()
     train["rolling_kurt"] = train.signal.rolling(window=window).kurt()
 
-print(train.head(5))
+print(train)
