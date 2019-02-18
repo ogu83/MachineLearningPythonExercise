@@ -49,7 +49,7 @@ def createFeatureCol(features_arr, colname):
     elif colname == "q75":
         result = map(lambda x: np.quantile(x,0.75), features_arr)
 
-    result = np.fromiter(result, dtype=np.float64)    
+    result = np.fromiter(result, dtype=np.float64)
     return result
 
 if os.path.exists(TRAIN_NP_PATH):
