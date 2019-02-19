@@ -20,6 +20,8 @@ from sklearn.model_selection import StratifiedKFold, KFold, RepeatedKFold
 from sklearn.metrics import mean_absolute_error
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor, BaggingRegressor
+from gplearn.genetic import SymbolicRegressor
+from gplearn.functions import make_function
 
 import gc
 import seaborn as sns
@@ -620,14 +622,42 @@ else:
     print("Test DataFrame Saved")
 
 ##TRAINING AND PREDICTING
+def tanh(x):
+    return np.tanh(x);
+def sinh(x):
+    return np.sinh(x);
+def cosh(x):
+    return np.cosh(x);
+
+gp_tanh = make_function(tanh,"tanh",1)
+gp_sinh = make_function(sinh,"sinh",1)
+gp_cosh = make_function(cosh,"cosh",1)
+
+est_gp = SymbolicRegressor(population_size=20000,
+                           tournament_size=5000,
+                           generations=500, stopping_criteria=0.0,
+                           p_crossover=0.9, p_subtree_mutation=0.0001, p_hoist_mutation=0.0001, p_point_mutation=0.0001,
+                           max_samples=1.0, verbose=1,
+                           function_set = ('add', 'sub', 'mul', 'div', gp_tanh, 'sqrt', 'log', 'abs', 'neg', 'inv','max', 'min', 'tan', 'cos', 'sin'),
+                           metric = 'mean absolute error',
+                           n_jobs = -1, parsimony_coefficient=0.00001, random_state=11)
+
+#est_gp = SymbolicRegressor()
 
 alldata = pd.concat([X_tr, X_test])
 scaler = StandardScaler()
 alldata = pd.DataFrame(scaler.fit_transform(alldata), columns=alldata.columns)
 
-gpi_error = mean_absolute_error(y_tr,GPI(alldata[:X_tr.shape[0]])) 
-print("GPI MAE:", gpi_error)
+X_tr_scaled = alldata[:X_tr.shape[0]]
+X_test_scaled = alldata[X_tr.shape[0]:]
 
-submission.time_to_failure = GPI(alldata[X_tr.shape[0]:]).values
-submission.to_csv(DATA_PATH+'\\gpi_submission.csv',index=True)
+est_gp.fit(X_tr_scaled, y_tr)
+print(est_gp._program)
+y_gp = est_gp.predict(X_tr_scaled)
+gpLearn_MAE = mean_absolute_error(y_tr, y_gp) 
+print("gpLearn MAE:", gpLearn_MAE)
+
+
+submission.time_to_failure = est_gp.predict(X_test_scaled)
+submission.to_csv(DATA_PATH+'\\gplearn_submission.csv',index=True)
 print(submission.head())
