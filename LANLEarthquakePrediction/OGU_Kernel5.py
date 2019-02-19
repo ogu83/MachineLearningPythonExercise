@@ -23,8 +23,6 @@ from keras.layers import Conv2D, MaxPooling2D
 from threading import Thread
 from multiprocessing.pool import ThreadPool
 
-
-
 DATA_PATH = "D:\\LANLEarthquakeData"
 TRAIN_DATA_PATH = f"{DATA_PATH}\\train.csv"
 TEST_DATA_PATH = f"{DATA_PATH}\\test"
@@ -60,8 +58,8 @@ else:
     print("Train 2d Np Files Saved")
 
 #Build 150_000 row count samples
-row_count = 150_000
-row_dvider = 375
+row_count = 150_000//5
+row_dvider = 375//5//2
 
 IMG_H = row_count//row_dvider;
 IMG_W = row_dvider;
@@ -86,7 +84,7 @@ for i in tqdm(range(0,len(train_data),row_count)):
 labels = labels[(len(labels)-len(features)):]
 
 print("Label and Feture Shapes", labels.shape, features.shape)
-print(labels, features)
+#print(labels, features)
 
 X = np.reshape(samples, (-1, IMG_SIZE, IMG_SIZE, 1))
 X = X / 255.0
@@ -98,13 +96,13 @@ dense_layers = [0, 1, 2]
 layer_sizes = [32, 64, 128]
 conv_layers = [1, 2, 3]
 
-BATCH_SIZE = 10
+BATCH_SIZE = 100
 EPOCHS = 50
 
 for dense_layer in dense_layers:
     for layer_size in layer_sizes:
         for conv_layer in conv_layers:            
-            modelName = f"epoch{EPOCHS}-resize{IMG_SIZE}-conv{conv_layer}-nodes{layer_size}-dense{dense_layer}"
+            modelName = f"epoch{EPOCHS}-resize{row_count}_{IMG_SIZE}-conv{conv_layer}-nodes{layer_size}-dense{dense_layer}"
 
             print(modelName)
 
@@ -131,9 +129,9 @@ for dense_layer in dense_layers:
                 model.add(Activation('relu'))
 
             model.add(Dense(1))
-            model.add(Activation('linear'))            
+            model.add(Activation('sigmoid'))            
 
             model.compile(loss='mae', optimizer='adam', metrics=['mae'])
 
-            model.fit(X, y, batch_size=BATCH_SIZE, epochs=EPOCHS, validation_split=0.1, callbacks=[cb])
+            model.fit(X, y, batch_size=BATCH_SIZE, epochs=EPOCHS, validation_split=0.2, callbacks=[cb])
             model.save(f'{MODEL_PATH}\\{modelName}')
