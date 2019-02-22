@@ -1,7 +1,8 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\LANLEarthquakePrediction"
   ],
-  "SelectedNode": "\\tensorflow_keras_learn.py",
+  "SelectedNode": "\\sentiment_preprocessing.py",
   "PreviewInSolutionExplorer": false
 }

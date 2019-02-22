@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import os
+import pickle
 
 import matplotlib.pyplot as plt
 #%matplotlib inline
@@ -634,15 +635,18 @@ gp_sinh = make_function(sinh,"sinh",1)
 gp_cosh = make_function(cosh,"cosh",1)
 
 est_gp = SymbolicRegressor(population_size=20000,
-                           tournament_size=5000,
+                           tournament_size=500,
                            generations=500, stopping_criteria=0.0,
                            p_crossover=0.9, p_subtree_mutation=0.0001, p_hoist_mutation=0.0001, p_point_mutation=0.0001,
                            max_samples=1.0, verbose=1,
-                           function_set = ('add', 'sub', 'mul', 'div', gp_tanh, 'sqrt', 'log', 'abs', 'neg', 'inv','max', 'min', 'tan', 'cos', 'sin'),
-                           metric = 'mean absolute error',
-                           n_jobs = -1, parsimony_coefficient=0.00001, random_state=11)
+                           #function_set = ('add', 'sub', 'mul', 'div', gp_tanh, 'sqrt', 'log', 'abs', 'neg', 'inv','max', 'min', 'tan', 'cos', 'sin'),
+                           function_set = ('add', 'sub', 'mul', 'div', gp_tanh),
+                           metric = 'mean absolute error', warm_start=True,
+                           n_jobs = 1, parsimony_coefficient=0.00001, random_state=11)
 
-#est_gp = SymbolicRegressor()
+if (os.path.exists('est_gp.pickle')):
+    pickle_in = open('est_gp.pickle','rb')
+    est_gp = pickle.load(pickle_in)
 
 alldata = pd.concat([X_tr, X_test])
 scaler = StandardScaler()
@@ -652,11 +656,14 @@ X_tr_scaled = alldata[:X_tr.shape[0]]
 X_test_scaled = alldata[X_tr.shape[0]:]
 
 est_gp.fit(X_tr_scaled, y_tr)
-print(est_gp._program)
-y_gp = est_gp.predict(X_tr_scaled)
-gpLearn_MAE = mean_absolute_error(y_tr, y_gp) 
-print("gpLearn MAE:", gpLearn_MAE)
 
+with open('est_gp.pickle','wb') as f:
+    pickle.dump(est_gp, f)
+
+print("gpLearn Program:", est_gp._program)
+y_gp = est_gp.predict(X_tr_scaled)
+gpLearn_MAE = mean_absolute_error(y_tr, y_gp)
+print("gpLearn MAE:", gpLearn_MAE)
 
 submission.time_to_failure = est_gp.predict(X_test_scaled)
 submission.to_csv(DATA_PATH+'\\gplearn_submission.csv',index=True)
