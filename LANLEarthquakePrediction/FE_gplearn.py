@@ -490,7 +490,7 @@ else:
     print("Train DataFrame Saved")
 
 print(f'{X_tr.shape[0]} samples in new train data and {X_tr.shape[1]} columns.')
-print(np.abs(X_tr.corrwith(y_tr['time_to_failure'])).sort_values(ascending=False).head(12))
+#print(np.abs(X_tr.corrwith(y_tr['time_to_failure'])).sort_values(ascending=False).head(12))
 
 submission = pd.read_csv(SUBMISSON_PATH, index_col='seg_id')
 X_test = pd.DataFrame(columns=X_tr.columns, dtype=np.float64, index=submission.index)
@@ -634,37 +634,45 @@ gp_tanh = make_function(tanh,"tanh",1)
 gp_sinh = make_function(sinh,"sinh",1)
 gp_cosh = make_function(cosh,"cosh",1)
 
-est_gp = SymbolicRegressor(population_size=20000,
-                           tournament_size=500,
-                           generations=500, stopping_criteria=0.0,
-                           p_crossover=0.9, p_subtree_mutation=0.0001, p_hoist_mutation=0.0001, p_point_mutation=0.0001,
-                           max_samples=1.0, verbose=1,
-                           #function_set = ('add', 'sub', 'mul', 'div', gp_tanh, 'sqrt', 'log', 'abs', 'neg', 'inv','max', 'min', 'tan', 'cos', 'sin'),
-                           function_set = ('add', 'sub', 'mul', 'div', gp_tanh),
-                           metric = 'mean absolute error', warm_start=True,
-                           n_jobs = 1, parsimony_coefficient=0.00001, random_state=11)
+while True:
+    est_gp = SymbolicRegressor(population_size=20000,
+                               tournament_size=500,
+                               generations=10, stopping_criteria=0.0,
+                               p_crossover=0.9, p_subtree_mutation=0.00001, p_hoist_mutation=0.00001, p_point_mutation=0.00001,
+                               max_samples=1.0, verbose=1,
+                               #function_set = ('add', 'sub', 'mul', 'div', gp_tanh, 'sqrt', 'log', 'abs', 'neg', 'inv','max', 'min', 'tan', 'cos', 'sin'),
+                               function_set = (gp_tanh, 'add', 'sub', 'mul', 'div'),
+                               metric = 'mean absolute error', warm_start=True,
+                               n_jobs = 1, parsimony_coefficient=0.00001, random_state=11)
 
-if (os.path.exists('est_gp.pickle')):
-    pickle_in = open('est_gp.pickle','rb')
-    est_gp = pickle.load(pickle_in)
+    if (os.path.exists(f'{PICKLE_PATH}\\est_gp.pickle')):
+        pickle_in = open(f'{PICKLE_PATH}\\est_gp.pickle','rb')
+        est_gp = pickle.load(pickle_in)
+        print("Model Loaded")
 
-alldata = pd.concat([X_tr, X_test])
-scaler = StandardScaler()
-alldata = pd.DataFrame(scaler.fit_transform(alldata), columns=alldata.columns)
+    est_gp.generations = est_gp.generations + 10
 
-X_tr_scaled = alldata[:X_tr.shape[0]]
-X_test_scaled = alldata[X_tr.shape[0]:]
+    alldata = pd.concat([X_tr, X_test])
+    scaler = StandardScaler()
+    alldata = pd.DataFrame(scaler.fit_transform(alldata), columns=alldata.columns)
 
-est_gp.fit(X_tr_scaled, y_tr)
+    X_tr_scaled = alldata[:X_tr.shape[0]]
+    X_test_scaled = alldata[X_tr.shape[0]:]
 
-with open('est_gp.pickle','wb') as f:
-    pickle.dump(est_gp, f)
+    est_gp.fit(X_tr_scaled, y_tr)
 
-print("gpLearn Program:", est_gp._program)
-y_gp = est_gp.predict(X_tr_scaled)
-gpLearn_MAE = mean_absolute_error(y_tr, y_gp)
-print("gpLearn MAE:", gpLearn_MAE)
+    with open(f'{PICKLE_PATH}\\est_gp.pickle','wb') as f:
+        pickle.dump(est_gp, f)
+        print('Model Saved')
 
-submission.time_to_failure = est_gp.predict(X_test_scaled)
-submission.to_csv(DATA_PATH+'\\gplearn_submission.csv',index=True)
-print(submission.head())
+    #print("gpLearn Program:", est_gp._program)
+    y_gp = est_gp.predict(X_tr_scaled)
+    gpLearn_MAE = mean_absolute_error(y_tr, y_gp)
+    print("gpLearn MAE:", gpLearn_MAE)
+
+    submission.time_to_failure = est_gp.predict(X_test_scaled)
+    submission.to_csv(DATA_PATH+'\\gplearn_submission_v1.csv',index=True)
+    print(submission.head())
+
+    if gpLearn_MAE < 2: 
+        break

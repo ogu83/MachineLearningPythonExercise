@@ -64,8 +64,8 @@ print(labels.shape, features.shape)
 
 ##TRAIN MODEL WITH KERAS
 EPOCHS = 10
-BATCH_SIZE = 1000
-modelName="OGU_KERNEL_4_8R4R2R1L"
+BATCH_SIZE = 50
+modelName="OGU_KERNEL_4_8R4R2R1L_TANH"
 model = Sequential(name=modelName)
 cb = keras.callbacks.TensorBoard(log_dir=f'./DNNRegressors/{modelName}/', 
                             histogram_freq=0, 
@@ -77,15 +77,15 @@ if (os.path.exists(f"{MODEL_PATH}\\{model.name}.h5")):
     print("Model Loaded.", modelName)
 else:    
     print("Training Model", modelName)    
-    model.add(Dense(8, input_dim=features.shape[1], activation='relu'))    
+    model.add(Dense(8, input_dim=features.shape[1], activation='tanh'))    
     model.add(Dropout(0.1))
-    model.add(Dense(4, activation='relu'))
+    model.add(Dense(4, activation='tanh'))
     model.add(Dropout(0.1))
-    model.add(Dense(2, activation='relu'))                  
+    model.add(Dense(2, activation='tanh'))                  
     model.add(Dropout(0.1))
     model.add(Dense(1))
     model.compile(loss='mae', optimizer='adam', metrics=['mae'])
-    model.fit(features, labels, validation_split = 0.2, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=1, callbacks=[cb], shuffle=True)        
+    model.fit(features, labels, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=1, callbacks=[cb], shuffle=True)        
     model.save(f"{MODEL_PATH}\\{model.name}.h5")
     print("Model Saved.", modelName)
 print(model.summary())
