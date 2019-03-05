@@ -650,8 +650,13 @@ while True:
         est_gp = pickle.load(pickle_in)
         print("Model Loaded")
 
-    est_gp.generations = est_gp.generations + 10
-
+    est_gp.generations += 10
+    est_gp.p_subtree_mutation /= 10
+    est_gp.p_hoist_mutation /= 10
+    est_gp.p_point_mutation /= 10
+    est_gp.parsimony_coefficient /= 10
+    est_gp.random_state *= 10
+    
     alldata = pd.concat([X_tr, X_test])
     scaler = StandardScaler()
     alldata = pd.DataFrame(scaler.fit_transform(alldata), columns=alldata.columns)

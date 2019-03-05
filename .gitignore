@@ -21,3 +21,5 @@ Halite3_Python3_Linux-AMD64/logs/*
 *.suo
 /LANLEarthquakePrediction/DNNRegressors
 /TMBD/DNNRegressors
+*.h5
+/EURUSD/Keras

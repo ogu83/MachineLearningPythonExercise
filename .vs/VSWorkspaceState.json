@@ -1,8 +1,9 @@
 {
   "ExpandedNodes": [
     "",
+    "\\EURUSD",
     "\\LANLEarthquakePrediction"
   ],
-  "SelectedNode": "\\sentiment_preprocessing.py",
+  "SelectedNode": "\\LANLEarthquakePrediction\\FE_gplearn_gpi.py",
   "PreviewInSolutionExplorer": false
 }
