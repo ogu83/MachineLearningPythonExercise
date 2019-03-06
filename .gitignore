@@ -23,3 +23,5 @@ Halite3_Python3_Linux-AMD64/logs/*
 /TMBD/DNNRegressors
 *.h5
 /EURUSD/Keras
+*.hdf5
+*.tmp
