@@ -655,7 +655,7 @@ while True:
     est_gp.p_hoist_mutation /= 10
     est_gp.p_point_mutation /= 10
     est_gp.parsimony_coefficient /= 10
-    est_gp.random_state *= 10
+    #est_gp.random_state *= 10
     
     alldata = pd.concat([X_tr, X_test])
     scaler = StandardScaler()

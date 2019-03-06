@@ -625,9 +625,9 @@ else:
     print("Test DataFrame Saved")
 
 ##TRAINING AND PREDICTING
-#modelName = "catboots600" MAE: 1.7598826866191224
-#modelName = "catboots2000" MAE: 1.6888220161016418
-modelName = "catboots20000" 
+#modelName = "catboots600" #MAE: 1.7598826866191224
+#modelName = "catboots2000" #MAE: 1.6888220161016418
+modelName = "catboots20000" #MAE: 1.6214764660574665
 model = CatBoostRegressor(iterations=20000, use_best_model=True, verbose=True, loss_function="MAE")
 
 if (os.path.exists(f'{PICKLE_PATH}\\{modelName}.pickle')):
