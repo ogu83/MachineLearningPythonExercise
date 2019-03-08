@@ -25,3 +25,4 @@ Halite3_Python3_Linux-AMD64/logs/*
 /EURUSD/Keras
 *.hdf5
 *.tmp
+/EURUSD/catboost_info
