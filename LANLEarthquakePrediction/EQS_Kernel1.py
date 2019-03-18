@@ -6,7 +6,8 @@ import pickle
 from tqdm import tqdm as tqdm
 
 from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import StandardScaler, RobustScaler,MaxAbsScaler
+from sklearn.ensemble import RandomForestRegressor, BaggingRegressor
+from sklearn.preprocessing import StandardScaler, RobustScaler, MaxAbsScaler
 from sklearn.svm import NuSVR, SVR
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import KFold
@@ -565,15 +566,15 @@ def GeneticPrograming():
     y_tr = df_train_sum['time']
 
     while True:
-        est_gp = SymbolicRegressor(population_size=20000,
-                                    tournament_size=500,
+        est_gp = SymbolicRegressor(population_size=200000,
+                                    tournament_size=5000,
                                     generations=10, stopping_criteria=0.0,
-                                    p_crossover=0.9, p_subtree_mutation=0.0001, p_hoist_mutation=0.0001, p_point_mutation=0.0001,
+                                    p_crossover=0.9, p_subtree_mutation=0.001, p_hoist_mutation=0.001, p_point_mutation=0.001,
                                     max_samples=1.0, verbose=1,
                                     function_set = ('add', 'sub', 'mul', 'div', gp_tanh, 'sqrt', 'log', 'abs', 'neg', 'inv','max', 'min', 'tan', 'cos', 'sin'),
                                     #function_set = (gp_tanh, 'add', 'sub', 'mul', 'div'),
                                     metric = 'mean absolute error', warm_start=True,
-                                    n_jobs = 1, parsimony_coefficient=0.0001, random_state=11)
+                                    n_jobs = 1, parsimony_coefficient=0.001, random_state=11)
 
         if (os.path.exists(f'{PICKLE_PATH}\\EQS_gp.pickle')):
             pickle_in = open(f'{PICKLE_PATH}\\EQS_gp.pickle', 'rb')
@@ -870,10 +871,55 @@ def CATBOOST():
     print(submission.head())
     print(submission.tail())
     print(submission.describe())
+
+def RANDOMFOREST():
+    X_test = df_test_sum.drop('time', axis=1).fillna(0)
+    X_tr = df_train_sum.drop('time',  axis=1).fillna(0)
+    y_tr = df_train_sum['time']
+
+    alldata = pd.concat([X_tr, X_test])
+    scaler = StandardScaler()
+    alldata = pd.DataFrame(scaler.fit_transform(alldata), columns=alldata.columns)
+
+    X_tr_scaled = alldata[:X_tr.shape[0]]
+    X_test_scaled = alldata[X_tr.shape[0]:]
+
+    model = RandomForestRegressor(n_estimators = 0,
+                                  criterion = 'mae',   
+                                  n_jobs = 2,
+                                  verbose = 0,
+                                  warm_start = True)
+
+    n_fold = 50
+    folds = KFold(n_splits = n_fold, shuffle = True, random_state = 101)
+    for fold_n, (train_index, valid_index) in enumerate(folds.split(X_tr_scaled)):
+        print('Fold', fold_n)
+        print("-------------------------------------------------------")
+        model.n_estimators += 10
+        print('n_estimators', model.n_estimators)
+
+        X_train_f, X_valid = X_tr_scaled.iloc[train_index], X_tr_scaled.iloc[valid_index]
+        y_train_f, y_valid = y_tr.iloc[train_index], y_tr.iloc[valid_index]
+        model.fit(X_train_f, y_train_f)
+
+        y_pred_valid = model.predict(X_valid)
+        y_pred_all = model.predict(X_tr_scaled)        
+        valid_mae = mean_absolute_error(y_valid.values.flatten(), y_pred_valid)
+        mae = mean_absolute_error(y_tr.values.flatten(), y_pred_all)
+        print("mae: ",mae)
+        print("valid_mae: ",valid_mae)
+
+    prediction = model.predict(X_test_scaled)
+    submission.time_to_failure = prediction
+    submission.to_csv(f'{DATA_PATH}\\RANDOMFOREST_EQS_v1_submission.csv', index=True)
+    print(submission.head())
+    print(submission.tail())
+    print(submission.describe())
         
 #LGB()
 #XGB()
 #GeneticPrograming()
 #KERAS()
-CATBOOST()
+#CATBOOST()
+RANDOMFOREST()
    
