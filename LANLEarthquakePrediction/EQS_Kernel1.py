@@ -884,18 +884,23 @@ def RANDOMFOREST():
     X_tr_scaled = alldata[:X_tr.shape[0]]
     X_test_scaled = alldata[X_tr.shape[0]:]
 
-    model = RandomForestRegressor(n_estimators = 0,
+    model = RandomForestRegressor(n_estimators = 100,
                                   criterion = 'mae',   
+                                  max_features= 1,
+                                  min_samples_leaf = 30,
                                   n_jobs = 2,
                                   verbose = 0,
+                                  oob_score = True,
                                   warm_start = True)
 
-    n_fold = 50
+    n_fold = 5
     folds = KFold(n_splits = n_fold, shuffle = True, random_state = 101)
+    valid_mae  = 0
+    mae = 0
     for fold_n, (train_index, valid_index) in enumerate(folds.split(X_tr_scaled)):
         print('Fold', fold_n)
         print("-------------------------------------------------------")
-        model.n_estimators += 10
+        model.n_estimators *= 2
         print('n_estimators', model.n_estimators)
 
         X_train_f, X_valid = X_tr_scaled.iloc[train_index], X_tr_scaled.iloc[valid_index]
@@ -904,14 +909,20 @@ def RANDOMFOREST():
 
         y_pred_valid = model.predict(X_valid)
         y_pred_all = model.predict(X_tr_scaled)        
+
+        #if valid_mae > 0 and mae > 0:
+        #    if valid_mae <= mean_absolute_error(y_valid.values.flatten(), y_pred_valid) or mae <= mean_absolute_error(y_tr.values.flatten(), y_pred_all):
+        #        print("Stopped by overfitting detector")
+        #        break
+
         valid_mae = mean_absolute_error(y_valid.values.flatten(), y_pred_valid)
-        mae = mean_absolute_error(y_tr.values.flatten(), y_pred_all)
+        mae = mean_absolute_error(y_tr.values.flatten(), y_pred_all)       
         print("mae: ",mae)
         print("valid_mae: ",valid_mae)
 
     prediction = model.predict(X_test_scaled)
     submission.time_to_failure = prediction
-    submission.to_csv(f'{DATA_PATH}\\RANDOMFOREST_EQS_v1_submission.csv', index=True)
+    submission.to_csv(f'{DATA_PATH}\\RANDOMFOREST_EQS_v4_submission.csv', index=True)
     print(submission.head())
     print(submission.tail())
     print(submission.describe())

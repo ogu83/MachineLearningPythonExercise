@@ -1,8 +1,8 @@
 {
   "ExpandedNodes": [
     "",
-    "\\EURUSD",
     "\\LANLEarthquakePrediction"
   ],
+  "SelectedNode": "\\LANLEarthquakePrediction\\SplitQuakes.py",
   "PreviewInSolutionExplorer": false
 }

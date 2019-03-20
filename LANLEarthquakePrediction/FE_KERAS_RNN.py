@@ -50,8 +50,8 @@ y = np.array(y_tr)
 
 n_features = len(X_train_scaled.columns)
 
-BATCH_SIZE = 50
-EPOCHS = 500
+BATCH_SIZE = 150
+EPOCHS = 10
 modelName = f"Keras_E{EPOCHS}_6R10_1_ADAM_KERNELN_v1"
 
 model = Sequential(name=modelName)

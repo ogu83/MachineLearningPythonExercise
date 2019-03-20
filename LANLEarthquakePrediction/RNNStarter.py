@@ -5,6 +5,7 @@ import pandas as pd
 from pandas import DataFrame
 import os
 from tqdm import tqdm
+from scipy.stats import kurtosis, variation, gmean, moment, skew, sem, iqr
 
 # Fix seeds
 from numpy.random import seed
@@ -21,7 +22,7 @@ TRAIN_DATA_PATH = f"{DATA_PATH}\\train.csv"
 TEST_DATA_PATH = f"{DATA_PATH}\\test"
 SUBMISSON_PATH = f"{DATA_PATH}\\sample_submission.csv"
 
-float_data = pd.read_csv(TRAIN_DATA_PATH, dtype={"acoustic_data": np.float32, "time_to_failure": np.float32}).values
+float_data = pd.read_csv(TRAIN_DATA_PATH, dtype={"acoustic_data": np.float32, "time_to_failure": np.float32}, nrows=51_000_000).values
 #float_data = DataFrame( columns = {'acoustic_data': np.int16, 'time_to_failure': np.float32} )
 #chunks = pd.read_csv(TRAIN_DATA_PATH, dtype={'acoustic_data': np.int16, 'time_to_failure': np.float32}, chunksize= 10 ** 3).values
 #for chunk in tqdm(chunks):
@@ -30,9 +31,19 @@ float_data = pd.read_csv(TRAIN_DATA_PATH, dtype={"acoustic_data": np.float32, "t
 # Helper function for the data generator. Extracts mean, standard deviation, and quantiles per time step.
 # Can easily be extended. Expects a two dimensional array.
 def extract_features(z):
-     return np.c_[z.mean(axis=1), 
-                  np.transpose(np.percentile(np.abs(z), q=[0, 50, 75, 100], axis=1)),
-                  z.std(axis=1)]
+    return np.c_[z.mean(axis=1), 
+                 np.fft.hfft(z,axis=1),
+                 np.transpose(np.percentile(np.abs(z), q=[1, 10, 90, 99], axis=1)),
+                 z.std(axis=1),
+                 kurtosis(z,axis=1),    
+                 #variation(z,axis=1),
+                 #gmean(z,axis=1),
+                 moment(z,axis=1),
+                 skew(z,axis=1), 
+                 iqr(z,axis=1),
+                 z.min(axis=1),
+                 z.max(axis=1),
+                ]
 
 # For a given ending position "last_index", we split the last 150'000 values 
 # of "x" into 150 pieces of length 1000 each. So n_steps * step_length should equal 150'000.
@@ -81,11 +92,14 @@ batch_size = 32
 # Position of second (of 16) earthquake. Used to have a clean split
 # between train and validation
 second_earthquake = 50_085_877
-float_data[second_earthquake, 1]
+#float_data[second_earthquake, 1]
 
 # Initialize generators
-train_gen = generator(float_data, batch_size=batch_size, min_index=second_earthquake + 1)
+train_gen = generator(float_data, batch_size=batch_size) # Use this for better score
+#train_gen = generator(float_data, batch_size=batch_size, min_index=second_earthquake + 1)
 valid_gen = generator(float_data, batch_size=batch_size, max_index=second_earthquake)
+
+#print(list(train_gen))
 
 # Define model
 from keras.models import Sequential
@@ -96,10 +110,9 @@ from keras.callbacks import ModelCheckpoint
 cb = [ModelCheckpoint("model.hdf5", save_best_only=True, period=3)]
 
 model = Sequential()
-model.add(GRU(48, input_shape=(None, n_features)))
-model.add(Dense(10, activation='relu'))
-model.add(Dense(1))
-
+model.add(GRU(128, activation='tanh', input_shape=(None, n_features)))
+model.add(Dense(64, activation='tanh'))
+model.add(Dense(1, activation='linear'))
 model.summary()
 
 # Compile and fit model
@@ -108,7 +121,7 @@ model.compile(optimizer=adam(lr=0.0005), loss="mae")
 history = model.fit_generator(train_gen,
                               steps_per_epoch=1000,
                               epochs=30,
-                              verbose=0,
+                              verbose=1,
                               callbacks=cb,
                               validation_data=valid_gen,
                               validation_steps=200)
@@ -144,4 +157,4 @@ for i, seg_id in enumerate(tqdm(submission.index)):
 submission.head()
 
 # Save
-submission.to_csv('submission.csv')
+submission.to_csv('RNN_FURTHER_submission.csv')
