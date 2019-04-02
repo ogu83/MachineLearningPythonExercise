@@ -1,0 +1,10 @@
+{
+  "version": "0.2.1",
+  "tasks": [
+    {
+      "taskName": "task-RandomForest_RandomSearch",
+      "appliesTo": "TMBD/RandomForest_RandomSearch.py",
+      "type": "launch"
+    }
+  ]
+}

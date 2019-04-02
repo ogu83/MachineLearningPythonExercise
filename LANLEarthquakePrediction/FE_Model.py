@@ -203,7 +203,7 @@ else:
     
         for windows in [10, 100, 1000]:
             x_roll_std = x.rolling(windows).std().dropna().values
-            x_roll_mean = x.rolling(windows).mean().dropna().values                
+            x_roll_mean = x.rolling(windows).mean().dropna().values
         
             X_tr.loc[segment, 'ave_roll_std_' + str(windows)] = x_roll_std.mean()
             X_tr.loc[segment, 'std_roll_std_' + str(windows)] = x_roll_std.std()

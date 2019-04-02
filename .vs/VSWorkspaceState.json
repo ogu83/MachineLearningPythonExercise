@@ -1,8 +1,9 @@
 {
   "ExpandedNodes": [
     "",
-    "\\LANLEarthquakePrediction"
+    "\\LANLEarthquakePrediction",
+    "\\TMBD"
   ],
-  "SelectedNode": "\\LANLEarthquakePrediction\\SplitQuakes.py",
+  "SelectedNode": "\\LANLEarthquakePrediction\\FE_Model.py",
   "PreviewInSolutionExplorer": false
 }
