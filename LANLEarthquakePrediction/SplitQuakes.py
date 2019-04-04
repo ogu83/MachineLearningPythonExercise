@@ -23,6 +23,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Dropout, BatchNormalization
 from keras.wrappers.scikit_learn import KerasRegressor
 from sklearn.model_selection import cross_val_score
+from sklearn import model_selection
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
@@ -226,6 +227,8 @@ print(quake_df_all.describe())
 
 ###TRAIN####
 
+scaler = StandardScaler()
+
 def train():
     tr_X = quake_df_all.drop(["time"], axis=1)
     tr_y = quake_df_all["time"]
@@ -246,18 +249,26 @@ def train():
     #     'min_samples_leaf': [0.001,0.0005,0.0003,0.0001],
     #     'min_samples_split':[50]},
     #]
+    #gridSearch = GridSearchCV(model, n_jobs=2, verbose=10, cv=5, scoring='neg_mean_absolute_error', param_grid=param_grid)
     
-    modelName = "SplitQuakes_CatBoostRegressor_GridSearch_v2"
-    model = CatBoostRegressor(iterations = 2000, use_best_model = False, verbose = 100, loss_function= 'MAE', thread_count = 1)
-    param_grid = [
-        #{'n_estimators': [100], 
-        # 'max_features': [0.05],
-        # 'min_samples_leaf': [0.005,0.003,0.001],
-        # 'min_samples_split':[50]},
-        {'learning_rate': [0.1,0.01,0.001,0.0001]},
-    ]
+    modelName = "SplitQuakes_CatBoostRegressor_v3"
+    model = CatBoostRegressor(iterations = 30_000, 
+                              use_best_model = True, 
+                              verbose = 10, 
+                              loss_function = 'MAE',                                                             
+                              thread_count = 2, 
+                              early_stopping_rounds = 3000,
+                              random_strength = 200,
+                              bagging_temperature = 8,
+                              l2_leaf_reg = 8,
+                              depth = 10,
+                              learning_rate = 0.01)
+    
+    scaler.fit(tr_X)
+    tr_X = pd.DataFrame(scaler.transform(tr_X), columns=tr_X.columns)    
 
-    gridSearch = GridSearchCV(model, n_jobs=2, verbose=10, cv=5, scoring='neg_mean_absolute_error', param_grid=param_grid)
+    X_train, X_valid, y_train, y_valid = model_selection.train_test_split(tr_X, tr_y, test_size=0.2, shuffle=True)
+    model.fit(X_train, y_train, eval_set=(X_valid,y_valid))
     
     def KERAS_TENSOR():
         BATCH_SIZE = 100
@@ -297,14 +308,14 @@ def train():
     #RANDOM_FOREST()
     
     #model.fit(tr_X, tr_y)
-    gridSearch.fit(tr_X,tr_y)
-    model = gridSearch.best_estimator_
+    #gridSearch.fit(tr_X,tr_y)
+    #model = gridSearch.best_estimator_
 
     #print("Grid Search Results")
     #print(gridSearch.cv_results_)
 
-    print("Grid Search Best Parameters")
-    print(gridSearch.best_params_)
+    #print("Grid Search Best Parameters")
+    #print(gridSearch.best_params_)
 
     y_pred = np.array(model.predict(tr_X))
     y_pred = y_pred.reshape(y_pred.shape[0])
@@ -392,6 +403,9 @@ def predict_test_data():
      
     print(test_df)
     print(test_df.describe())    
+
+    test_df = pd.DataFrame(scaler.transform(test_df), columns=test_df.columns)
+
     submission.time_to_failure = model.predict(test_df)
     
     print(submission)

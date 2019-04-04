@@ -1,9 +1,7 @@
 {
   "ExpandedNodes": [
-    "",
-    "\\LANLEarthquakePrediction",
-    "\\TMBD"
+    ""
   ],
-  "SelectedNode": "\\LANLEarthquakePrediction\\FE_Model.py",
+  "SelectedNode": "\\Catboost_Test.py",
   "PreviewInSolutionExplorer": false
 }
