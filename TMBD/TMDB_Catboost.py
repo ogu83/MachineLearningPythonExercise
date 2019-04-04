@@ -118,7 +118,7 @@ def prepareData(data):
     data.fillna(0, inplace=True)
     data["budget"] = np.log1p(SimpleImputer(missing_values=0, verbose=1).fit_transform(data["budget"].values.reshape(-1,1)))
 
-    data["budget"] = np.log1p(data['budget'])
+    data[LABEL_COL_NAME] = np.log1p(data[LABEL_COL_NAME])
 
     
 
