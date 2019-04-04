@@ -20,6 +20,11 @@ import ast
 
 from datetime import datetime
 
+TRAIN_DATA_PATH = "./train.csv"
+TEST_DATA_PATH = "./test.csv"
+SUBMISSON_PATH = "./sample_submission.csv"
+LABEL_COL_NAME = "revenue"
+
 def date(x):
     x=str(x)
     year=x.split('/')[2]
@@ -122,10 +127,7 @@ def prepareData(data):
 
     
 
-TRAIN_DATA_PATH = "./train.csv"
-TEST_DATA_PATH = "./test.csv"
-SUBMISSON_PATH = "./sample_submission.csv"
-LABEL_COL_NAME = "revenue"
+
 
 if not os.path.exists("all_data.pickle"):
     train = pd.read_csv(TRAIN_DATA_PATH, index_col='id')
