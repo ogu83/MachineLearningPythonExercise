@@ -29,3 +29,7 @@ Halite3_Python3_Linux-AMD64/logs/*
 /catboost_info
 /TMBD/catboost_info
 /TMBD/cat_boost_v1
+/TMBD/cat_boost_v3
+/TMBD/cat_boost_v2
+/TMBD/submission_cat_boost_v3.csv
+/TMBD/submission_cat_boost_v2.csv

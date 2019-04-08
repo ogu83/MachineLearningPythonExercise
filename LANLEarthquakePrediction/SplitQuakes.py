@@ -17,27 +17,25 @@ from sklearn.ensemble import RandomForestRegressor, BaggingRegressor
 from sklearn.preprocessing import StandardScaler, RobustScaler, MaxAbsScaler
 from sklearn.svm import NuSVR, SVR
 from sklearn.metrics import mean_absolute_error
-from sklearn.model_selection import KFold, GridSearchCV, RandomizedSearchCV
+from sklearn.model_selection import KFold, GridSearchCV, RandomizedSearchCV, cross_val_score
 
-from keras.models import Sequential
+import keras
+from keras.models import load_model,Sequential
 from keras.layers import Dense, Dropout, BatchNormalization
 from keras.wrappers.scikit_learn import KerasRegressor
-from sklearn.model_selection import cross_val_score
+
 from sklearn import model_selection
-from sklearn.model_selection import KFold
-from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
-from keras.models import load_model
-import keras
+from sklearn.kernel_ridge import KernelRidge
+from sklearn.neural_network import MLPRegressor
 
 from gplearn.genetic import SymbolicRegressor
 from gplearn.functions import make_function
 
 import lightgbm as lgb
 import xgboost as xgb
+
 from catboost import CatBoostRegressor, Pool
-from sklearn.kernel_ridge import KernelRidge
-from sklearn.neural_network import MLPRegressor
 
 from scipy.stats import moment
 from scipy.fftpack import fft, ifft
@@ -94,9 +92,6 @@ heavisides = list(np.append(heavisides, -1*np.array(heavisides)))
 #                                warm_start = True)
 
 
-
-
-
 #def tanh(x):
 #    return np.tanh(x);
 #def sinh(x):
@@ -119,8 +114,8 @@ heavisides = list(np.append(heavisides, -1*np.array(heavisides)))
 #                            n_jobs = 1, parsimony_coefficient=0.001, random_state=11)
 
 
-
 #model = CatBoostRegressor(iterations = 1000, use_best_model = False, verbose = 10, loss_function= 'MAE', thread_count = 4)
+
 
 ###PRE PROCESSING###
 quake_df_all = pd.DataFrame()
@@ -251,25 +246,68 @@ def train():
     #]
     #gridSearch = GridSearchCV(model, n_jobs=2, verbose=10, cv=5, scoring='neg_mean_absolute_error', param_grid=param_grid)
     
-    modelName = "SplitQuakes_CatBoostRegressor_v3"
-    model = CatBoostRegressor(iterations = 30_000, 
-                              use_best_model = True, 
-                              verbose = 10, 
-                              loss_function = 'MAE',                                                             
-                              thread_count = 2, 
-                              early_stopping_rounds = 3000,
-                              random_strength = 200,
-                              bagging_temperature = 8,
-                              l2_leaf_reg = 8,
-                              depth = 10,
-                              learning_rate = 0.01)
+    #modelName = "SplitQuakes_CatBoostRegressor_v4"
+    #model = CatBoostRegressor(iterations=40_000, 
+    #                          learning_rate = 0.1, 
+    #                          depth=10, 
+    #                          l2_leaf_reg = 0.1,
+    #                          use_best_model = True, 
+    #                          verbose = 10, 
+    #                          loss_function = 'MAE',                                                                                            
+    #                          early_stopping_rounds = 3000)    
     
+    #scaler.fit(tr_X)
+    #tr_X = pd.DataFrame(scaler.transform(tr_X), columns=tr_X.columns)    
+
+    #X_train, X_valid, y_train, y_valid = model_selection.train_test_split(tr_X, tr_y, test_size=0.2, shuffle=True)
+    #model.fit(X_train, y_train, eval_set=(X_valid,y_valid), use_best_model = True)
+
+    params = {'num_leaves': 128,
+          'min_data_in_leaf': 79,
+          'objective': 'huber',
+          'max_depth': -1,
+          'learning_rate': 0.01,
+          "boosting": "gbdt",
+          "bagging_freq": 5,
+          "bagging_fraction": 0.8126672064208567,
+          "bagging_seed": 11,
+          "metric": 'mae',
+          "verbosity": -1,
+          'reg_alpha': 0.1302650970728192,
+          'reg_lambda': 0.3603427518866501
+         }
+    modelName = "LGBM_Regressor_v4"
+    model = lgb.LGBMRegressor(**params, n_estimators = 50000, n_jobs = 2)
+
     scaler.fit(tr_X)
     tr_X = pd.DataFrame(scaler.transform(tr_X), columns=tr_X.columns)    
 
     X_train, X_valid, y_train, y_valid = model_selection.train_test_split(tr_X, tr_y, test_size=0.2, shuffle=True)
-    model.fit(X_train, y_train, eval_set=(X_valid,y_valid))
-    
+    model.fit(X_train, y_train, 
+        eval_set=[(X_train, y_train), (X_valid, y_valid)], eval_metric='mae',
+        verbose=5000, early_stopping_rounds=500)                
+
+
+    #modelName = "SplitQuakes_XGB_v1"
+    #X_train, X_valid, y_train, y_valid = model_selection.train_test_split(tr_X, tr_y, test_size=0.2, shuffle=True)
+    #train_data = xgb.DMatrix(data=X_train, label=y_train, feature_names=tr_X.columns)
+    #valid_data = xgb.DMatrix(data=X_valid, label=y_valid, feature_names=tr_X.columns)
+    #watchlist = [(train_data, 'train'), (valid_data, 'valid_data')]
+    #model = xgb.train(dtrain=train_data, 
+    #                  num_boost_round=40_000, 
+    #                  evals=watchlist, 
+    #                  early_stopping_rounds=1_000, 
+    #                  verbose_eval=100,                      
+    #                  params={
+    #                      'eta': 0.1,
+    #                      'max_depth': 10,
+    #                      'subsample': 1,                          
+    #                      'eval_metric': 'mae',                            
+    #                      'nthread': 2,
+    #                      'silent': True
+    #                      }
+    #                  )
+
     def KERAS_TENSOR():
         BATCH_SIZE = 100
         EPOCHS = 1000
@@ -317,7 +355,8 @@ def train():
     #print("Grid Search Best Parameters")
     #print(gridSearch.best_params_)
 
-    y_pred = np.array(model.predict(tr_X))
+    #y_pred = np.array(model.predict(tr_X))
+    y_pred = np.array(model.predict(tr_X, num_iteration=model.best_iteration_))
     y_pred = y_pred.reshape(y_pred.shape[0])
     mae = mean_absolute_error(tr_y, y_pred)
     print(f"Model MAE:{mae}")
@@ -406,7 +445,8 @@ def predict_test_data():
 
     test_df = pd.DataFrame(scaler.transform(test_df), columns=test_df.columns)
 
-    submission.time_to_failure = model.predict(test_df)
+    submission.time_to_failure = model.predict(test_df, num_iteration=model.best_iteration_)
+    #y_pred = model.predict(xgb.DMatrix(test_df, feature_names=test_df.columns), ntree_limit=model.best_ntree_limit)
     
     print(submission)
     submission.to_csv(f'{DATA_PATH}\\submission{modelName}.csv')
