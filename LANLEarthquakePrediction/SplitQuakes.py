@@ -20,7 +20,7 @@ from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import KFold, GridSearchCV, RandomizedSearchCV, cross_val_score
 
 import keras
-from keras.models import load_model,Sequential
+from keras.models import load_model, Sequential
 from keras.layers import Dense, Dropout, BatchNormalization
 from keras.wrappers.scikit_learn import KerasRegressor
 
@@ -262,30 +262,30 @@ def train():
     #X_train, X_valid, y_train, y_valid = model_selection.train_test_split(tr_X, tr_y, test_size=0.2, shuffle=True)
     #model.fit(X_train, y_train, eval_set=(X_valid,y_valid), use_best_model = True)
 
-    params = {'num_leaves': 128,
-          'min_data_in_leaf': 79,
-          'objective': 'huber',
-          'max_depth': -1,
-          'learning_rate': 0.01,
-          "boosting": "gbdt",
-          "bagging_freq": 5,
-          "bagging_fraction": 0.8126672064208567,
-          "bagging_seed": 11,
-          "metric": 'mae',
-          "verbosity": -1,
-          'reg_alpha': 0.1302650970728192,
-          'reg_lambda': 0.3603427518866501
-         }
-    modelName = "LGBM_Regressor_v4"
-    model = lgb.LGBMRegressor(**params, n_estimators = 50000, n_jobs = 2)
+    #params = {'num_leaves': 128,
+    #      'min_data_in_leaf': 79,
+    #      'objective': 'huber',
+    #      'max_depth': -1,
+    #      'learning_rate': 0.01,
+    #      "boosting": "gbdt",
+    #      "bagging_freq": 5,
+    #      "bagging_fraction": 0.8126672064208567,
+    #      "bagging_seed": 11,
+    #      "metric": 'mae',
+    #      "verbosity": -1,
+    #      'reg_alpha': 0.1302650970728192,
+    #      'reg_lambda': 0.3603427518866501
+    #     }
+    #modelName = "LGBM_Regressor_v4"
+    #model = lgb.LGBMRegressor(**params, n_estimators = 50000, n_jobs = 2)
 
-    scaler.fit(tr_X)
-    tr_X = pd.DataFrame(scaler.transform(tr_X), columns=tr_X.columns)    
+    #scaler.fit(tr_X)
+    #tr_X = pd.DataFrame(scaler.transform(tr_X), columns=tr_X.columns)    
 
-    X_train, X_valid, y_train, y_valid = model_selection.train_test_split(tr_X, tr_y, test_size=0.2, shuffle=True)
-    model.fit(X_train, y_train, 
-        eval_set=[(X_train, y_train), (X_valid, y_valid)], eval_metric='mae',
-        verbose=5000, early_stopping_rounds=500)                
+    #X_train, X_valid, y_train, y_valid = model_selection.train_test_split(tr_X, tr_y, test_size=0.2, shuffle=True)
+    #model.fit(X_train, y_train, 
+    #    eval_set=[(X_train, y_train), (X_valid, y_valid)], eval_metric='mae',
+    #    verbose=5000, early_stopping_rounds=500)                
 
 
     #modelName = "SplitQuakes_XGB_v1"
@@ -309,20 +309,20 @@ def train():
     #                  )
 
     def KERAS_TENSOR():
-        BATCH_SIZE = 100
+        BATCH_SIZE = 10
         EPOCHS = 1000
-        modelName = f"Keras_Quake_Split_v5"
+        modelName = f"Keras_Quake_Split_v9"
         model = Sequential(name=modelName)
         cb = keras.callbacks.TensorBoard(log_dir=f'./DNNRegressors/{modelName}/', 
                                     histogram_freq=0, 
-                                    batch_size=BATCH_SIZE, write_graph=True, write_grads=False, write_images=False, embeddings_freq=0, 
-                                    embeddings_layer_names=None, embeddings_metadata=None, embeddings_data=None, update_freq='epoch')    
+                                    batch_size=BATCH_SIZE, write_graph=True, write_grads=True, write_images=True, embeddings_freq=0, 
+                                    embeddings_layer_names=[1,2,3,4,5], embeddings_metadata=None, embeddings_data=None, update_freq='epoch')    
 
         model.add(Dense(n_features, input_dim=n_features, activation='tanh'))
         for d in range(6):
-            model.add(Dense(6,  activation='tanh'))
-            model.add(BatchNormalization())
+            model.add(Dense(n_features//(d+1),  activation='tanh'))
             model.add(Dropout(0.1))    
+            model.add(BatchNormalization())            
         model.add(Dense(1, activation='linear'))
         model.compile(loss='mae', optimizer='adam')       
     
@@ -342,7 +342,7 @@ def train():
         print(modelName)        
         print(model.summary())    
         
-    #KERAS_TENSOR()
+    KERAS_TENSOR()
     #RANDOM_FOREST()
     
     #model.fit(tr_X, tr_y)

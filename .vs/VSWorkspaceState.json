@@ -1,7 +1,8 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\PyTorch"
   ],
-  "SelectedNode": "\\Catboost_Test.py",
+  "SelectedNode": "\\PyTorch\\check_import.py",
   "PreviewInSolutionExplorer": false
 }
