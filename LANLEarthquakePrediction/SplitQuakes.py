@@ -231,6 +231,7 @@ def train():
     #print(tr_y.head())        
     n_features = len(tr_X.columns)
     
+
     #modelName = "SplitQuakes_RandomForest_GridSearch_v2"
     #model = RandomForestRegressor(criterion = 'mae')    
     #param_grid = [
@@ -246,21 +247,20 @@ def train():
     #]
     #gridSearch = GridSearchCV(model, n_jobs=2, verbose=10, cv=5, scoring='neg_mean_absolute_error', param_grid=param_grid)
     
-    #modelName = "SplitQuakes_CatBoostRegressor_v4"
-    #model = CatBoostRegressor(iterations=40_000, 
-    #                          learning_rate = 0.1, 
-    #                          depth=10, 
-    #                          l2_leaf_reg = 0.1,
-    #                          use_best_model = True, 
-    #                          verbose = 10, 
-    #                          loss_function = 'MAE',                                                                                            
-    #                          early_stopping_rounds = 3000)    
-    
-    #scaler.fit(tr_X)
-    #tr_X = pd.DataFrame(scaler.transform(tr_X), columns=tr_X.columns)    
 
-    #X_train, X_valid, y_train, y_valid = model_selection.train_test_split(tr_X, tr_y, test_size=0.2, shuffle=True)
-    #model.fit(X_train, y_train, eval_set=(X_valid,y_valid), use_best_model = True)
+    modelName = "SplitQuakes_CatBoostRegressor_v5"
+    model = CatBoostRegressor(iterations=20_000, 
+                              boosting_type='Ordered',
+                              verbose = 10, 
+                              loss_function = 'MAE',                                                                                            
+                              early_stopping_rounds = 1000)    
+    
+    scaler.fit(tr_X)
+    tr_X = pd.DataFrame(scaler.transform(tr_X), columns=tr_X.columns)    
+
+    X_train, X_valid, y_train, y_valid = model_selection.train_test_split(tr_X, tr_y, test_size=0.2, shuffle=True)
+    model.fit(X_train, y_train, eval_set=(X_valid,y_valid), use_best_model = True)
+
 
     #params = {'num_leaves': 128,
     #      'min_data_in_leaf': 79,
@@ -311,7 +311,7 @@ def train():
     def KERAS_TENSOR():
         BATCH_SIZE = 10
         EPOCHS = 1000
-        modelName = f"Keras_Quake_Split_v9"
+        modelName = f"Keras_Quake_Split_v10"
         model = Sequential(name=modelName)
         cb = keras.callbacks.TensorBoard(log_dir=f'./DNNRegressors/{modelName}/', 
                                     histogram_freq=0, 
@@ -342,7 +342,7 @@ def train():
         print(modelName)        
         print(model.summary())    
         
-    KERAS_TENSOR()
+    #KERAS_TENSOR()
     #RANDOM_FOREST()
     
     #model.fit(tr_X, tr_y)
@@ -445,7 +445,7 @@ def predict_test_data():
 
     test_df = pd.DataFrame(scaler.transform(test_df), columns=test_df.columns)
 
-    submission.time_to_failure = model.predict(test_df, num_iteration=model.best_iteration_)
+    submission.time_to_failure = model.predict(test_df)
     #y_pred = model.predict(xgb.DMatrix(test_df, feature_names=test_df.columns), ntree_limit=model.best_ntree_limit)
     
     print(submission)

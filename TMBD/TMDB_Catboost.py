@@ -156,8 +156,8 @@ def prepareData(data):
     data.drop("title", axis=1, inplace=True)    
 
     data.fillna(0, inplace=True)
-    #data["budget"] = np.log1p(SimpleImputer(missing_values=0, verbose=1).fit_transform(data["budget"].values.reshape(-1,1)))
-    data["budget"] = np.log1p(data["budget"])
+    data["budget"] = np.log1p(SimpleImputer(missing_values=0, strategy="median", verbose=1).fit_transform(data["budget"].values.reshape(-1,1)))
+    #data["budget"] = np.log1p(data["budget"])
 
     data[LABEL_COL_NAME] = np.log1p(data[LABEL_COL_NAME])
 
@@ -275,7 +275,7 @@ numerical_features = ['budget',
 cat_features = set(X_tr.columns) - set(numerical_features)
 cat_features = [list(X_tr.columns).index(c) for c in cat_features]
 
-model_name = 'cat_boost_v4'
+model_name = 'cat_boost_v6'
 model = CatBoostRegressor(iterations=20_000, 
                           #learning_rate = 0.01, 
                           #depth=10, 
